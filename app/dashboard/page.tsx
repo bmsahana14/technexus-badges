@@ -6,7 +6,8 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { getCurrentUser, signOut, isAdmin } from '@/lib/auth'
 import { supabase, type Badge } from '@/lib/supabase'
-import { Award, LogOut, Calendar, FileText, Loader2, ShieldCheck } from 'lucide-react'
+import { Award, LogOut, Calendar, FileText, Loader2, ShieldCheck, User, Settings, X, Save } from 'lucide-react'
+import { toast } from 'react-hot-toast'
 
 export default function Dashboard() {
     const router = useRouter()
@@ -14,6 +15,15 @@ export default function Dashboard() {
     const [badges, setBadges] = useState<Badge[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState('')
+
+    // Profile Modal State
+    const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
+    const [profileForm, setProfileForm] = useState({
+        first_name: '',
+        last_name: '',
+        designation: ''
+    })
+    const [isSavingProfile, setIsSavingProfile] = useState(false)
 
     useEffect(() => {
         checkUser()
@@ -35,11 +45,46 @@ export default function Dashboard() {
                 .single()
 
             setUser({ ...currentUser, ...profile })
+            setProfileForm({
+                first_name: profile?.first_name || '',
+                last_name: profile?.last_name || '',
+                designation: profile?.designation || ''
+            })
             await fetchBadges(currentUser.id)
         } catch (err) {
             router.push('/auth/signin')
         } finally {
             setLoading(false)
+        }
+    }
+
+    const handleUpdateProfile = async (e: React.FormEvent) => {
+        e.preventDefault()
+        setIsSavingProfile(true)
+        try {
+            const { error: updateError } = await supabase
+                .from('profiles')
+                .update({
+                    first_name: profileForm.first_name,
+                    last_name: profileForm.last_name,
+                    designation: profileForm.designation,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', user.id)
+
+            if (updateError) throw updateError
+
+            setUser((prev: any) => ({
+                ...prev,
+                ...profileForm
+            }))
+
+            toast.success('Profile updated successfully!')
+            setIsProfileModalOpen(false)
+        } catch (err: any) {
+            toast.error(err.message || 'Failed to update profile')
+        } finally {
+            setIsSavingProfile(false)
         }
     }
 
@@ -101,6 +146,17 @@ export default function Dashboard() {
                             </Link>
                         </div>
                         <div className="flex items-center space-x-2 sm:space-x-4">
+                            {user && (
+                                <button
+                                    onClick={() => setIsProfileModalOpen(true)}
+                                    className="flex items-center space-x-2 px-3 py-2 text-gray-700 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors text-sm font-medium border border-transparent hover:border-primary-100"
+                                >
+                                    <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center overflow-hidden border-2 border-primary-200">
+                                        <User className="w-5 h-5 text-primary-600" />
+                                    </div>
+                                    <span className="hidden sm:inline">Profile</span>
+                                </button>
+                            )}
                             {user && isAdmin(user.email) && (
                                 <Link
                                     href="/admin"
@@ -122,6 +178,87 @@ export default function Dashboard() {
                     </div>
                 </div>
             </header>
+
+            {/* Profile Edit Modal */}
+            {isProfileModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-900/50 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="bg-primary-600 p-6 text-white flex items-center justify-between">
+                            <div className="flex items-center space-x-3">
+                                <Settings className="w-6 h-6" />
+                                <h3 className="text-xl font-bold">Edit Profile</h3>
+                            </div>
+                            <button
+                                onClick={() => setIsProfileModalOpen(false)}
+                                className="p-1 hover:bg-white/20 rounded-lg transition-colors"
+                            >
+                                <X className="w-6 h-6" />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleUpdateProfile} className="p-6 space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1">First Name</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        className="input-field"
+                                        value={profileForm.first_name}
+                                        onChange={(e) => setProfileForm({ ...profileForm, first_name: e.target.value })}
+                                        placeholder="First Name"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1">Last Name</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        className="input-field"
+                                        value={profileForm.last_name}
+                                        onChange={(e) => setProfileForm({ ...profileForm, last_name: e.target.value })}
+                                        placeholder="Last Name"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1">Designation</label>
+                                <input
+                                    type="text"
+                                    required
+                                    className="input-field"
+                                    value={profileForm.designation}
+                                    onChange={(e) => setProfileForm({ ...profileForm, designation: e.target.value })}
+                                    placeholder="e.g. Software Engineer"
+                                />
+                            </div>
+
+                            <div className="pt-4 flex space-x-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsProfileModalOpen(false)}
+                                    className="flex-1 px-4 py-2 border-2 border-gray-200 text-gray-600 font-semibold rounded-xl hover:bg-gray-50 transition-all text-sm"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={isSavingProfile}
+                                    className="flex-1 btn-primary py-2 flex items-center justify-center space-x-2 text-sm"
+                                >
+                                    {isSavingProfile ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                        <Save className="w-4 h-4" />
+                                    )}
+                                    <span>{isSavingProfile ? 'Saving...' : 'Save Changes'}</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
 
             {/* Main Content */}
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">

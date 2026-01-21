@@ -7,7 +7,7 @@
 -- Create badges table
 CREATE TABLE IF NOT EXISTS public.badges (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
     badge_name VARCHAR(255) NOT NULL,
     badge_description TEXT,
     badge_image_url TEXT,
