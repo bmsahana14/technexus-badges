@@ -196,13 +196,22 @@ export default function AdminDashboard() {
                         <h2 className="text-3xl font-bold text-navy-900">Dashboard Overview</h2>
                         <p className="text-gray-500 mt-1">Control center for all issued credentials</p>
                     </div>
-                    <Link
-                        href="/admin/issue"
-                        className="btn-primary flex items-center justify-center space-x-2 shadow-xl hover:shadow-primary-100 py-3 px-8"
-                    >
-                        <Plus className="w-5 h-5" />
-                        <span className="text-lg">Issue New Badge</span>
-                    </Link>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                        <Link
+                            href="/admin/bulk"
+                            className="btn-secondary flex items-center justify-center space-x-2 py-3 px-6"
+                        >
+                            <Upload className="w-5 h-5" />
+                            <span>Bulk Issue (CSV)</span>
+                        </Link>
+                        <Link
+                            href="/admin/issue"
+                            className="btn-primary flex items-center justify-center space-x-2 shadow-xl hover:shadow-primary-100 py-3 px-8"
+                        >
+                            <Plus className="w-5 h-5" />
+                            <span className="text-lg">Issue New Badge</span>
+                        </Link>
+                    </div>
                 </div>
 
                 {/* Stats Grid */}
