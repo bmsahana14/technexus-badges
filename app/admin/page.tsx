@@ -68,12 +68,12 @@ export default function AdminDashboard() {
             setBadges(allBadges || [])
 
             // Calculate stats
-            const uniqueUserCount = new Set(allBadges?.map(u => u.user_id)).size
+            const uniqueUserCount = new Set(allBadges?.map((u: any) => u.user_id)).size
 
             setStats({
                 totalBadges: allBadges?.length || 0,
                 totalUsers: uniqueUserCount || 0,
-                recentIssuance: allBadges?.filter(b => {
+                recentIssuance: allBadges?.filter((b: any) => {
                     const today = new Date()
                     const badgeDate = new Date(b.created_at)
                     return badgeDate.toDateString() === today.toDateString()
@@ -109,7 +109,7 @@ export default function AdminDashboard() {
         }
     }
 
-    const filteredBadges = badges.filter(badge =>
+    const filteredBadges = badges.filter((badge: any) =>
         badge.badge_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         badge.event_name.toLowerCase().includes(searchTerm.toLowerCase())
     )
@@ -251,7 +251,7 @@ export default function AdminDashboard() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
-                                {filteredBadges.map((badge) => (
+                                {filteredBadges.map((badge: any) => (
                                     <tr key={badge.id} className="hover:bg-gray-50 transition-colors">
                                         <td className="px-6 py-4">
                                             <div className="flex items-center">
