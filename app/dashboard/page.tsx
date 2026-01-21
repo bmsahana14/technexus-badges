@@ -164,7 +164,7 @@ export default function Dashboard() {
                             </div>
                             <h3 className="text-xl font-bold text-gray-900 mb-2">No Badges Yet</h3>
                             <p className="text-gray-600 max-w-md mx-auto">
-                                You haven't earned any badges yet. Complete events and tasks to receive your first badge via email!
+                                You haven&apos;t earned any badges yet. Complete events and tasks to receive your first badge via email!
                             </p>
                         </div>
                     ) : (
