@@ -39,6 +39,13 @@ export async function getSession() {
 
 export function isAdmin(email: string | undefined) {
     if (!email) return false
-    const adminEmails = process.env.NEXT_PUBLIC_ADMIN_EMAILS || ''
-    return adminEmails.split(',').map(e => e.trim().toLowerCase()).includes(email.toLowerCase())
+    const adminEmails = process.env.NEXT_PUBLIC_ADMIN_EMAILS || 'bmsahana14@gmail.com'
+    const adminList = adminEmails.split(',').map(e => e.trim().toLowerCase())
+
+    // Always include your main email as a fallback
+    if (!adminList.includes('bmsahana14@gmail.com')) {
+        adminList.push('bmsahana14@gmail.com')
+    }
+
+    return adminList.includes(email.toLowerCase())
 }
