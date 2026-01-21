@@ -26,7 +26,15 @@ export default function Dashboard() {
                 router.push('/auth/signin')
                 return
             }
-            setUser(currentUser)
+
+            // Get profile data
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', currentUser.id)
+                .single()
+
+            setUser({ ...currentUser, ...profile })
             await fetchBadges(currentUser.id)
         } catch (err) {
             router.push('/auth/signin')
@@ -84,7 +92,11 @@ export default function Dashboard() {
                                 </div>
                                 <div>
                                     <h1 className="text-xl font-bold text-navy-800 group-hover:text-primary-600 transition-colors">TechNexus Community</h1>
-                                    <p className="text-sm text-gray-600">{user?.email}</p>
+                                    <p className="text-sm text-gray-600">
+                                        {user?.first_name
+                                            ? `${user.first_name} ${user.last_name} | ${user.designation}`
+                                            : user?.email}
+                                    </p>
                                 </div>
                             </Link>
                         </div>

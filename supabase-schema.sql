@@ -49,6 +49,47 @@ CREATE POLICY "Users can delete own badges"
     FOR DELETE
     USING (auth.uid() = user_id);
 
+-- Create profiles table
+CREATE TABLE IF NOT EXISTS public.profiles (
+    id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
+    first_name VARCHAR(255),
+    last_name VARCHAR(255),
+    designation VARCHAR(255),
+    email VARCHAR(255),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Enable RLS for profiles
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+
+-- Profile policies
+CREATE POLICY "Users can view own profile" ON public.profiles
+    FOR SELECT USING (auth.uid() = id);
+
+CREATE POLICY "Users can update own profile" ON public.profiles
+    FOR UPDATE USING (auth.uid() = id);
+
+-- Create profile on signup trigger
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+    INSERT INTO public.profiles (id, first_name, last_name, designation, email)
+    VALUES (
+        NEW.id,
+        NEW.raw_user_meta_data->>'first_name',
+        NEW.raw_user_meta_data->>'last_name',
+        NEW.raw_user_meta_data->>'designation',
+        NEW.email
+    );
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE TRIGGER on_auth_user_created
+    AFTER INSERT ON auth.users
+    FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
 -- Create updated_at trigger function
 CREATE OR REPLACE FUNCTION public.handle_updated_at()
 RETURNS TRIGGER AS $$
@@ -58,9 +99,15 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Create trigger for updated_at
+-- Create trigger for updated_at (badges)
 CREATE TRIGGER set_updated_at
     BEFORE UPDATE ON public.badges
+    FOR EACH ROW
+    EXECUTE FUNCTION public.handle_updated_at();
+
+-- Create trigger for updated_at (profiles)
+CREATE TRIGGER set_profile_updated_at
+    BEFORE UPDATE ON public.profiles
     FOR EACH ROW
     EXECUTE FUNCTION public.handle_updated_at();
 

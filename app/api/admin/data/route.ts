@@ -41,10 +41,18 @@ export async function GET(request: NextRequest) {
             }, { status: 403 })
         }
 
-        // 2. Fetch all badges using ADMIN client
+        // 2. Fetch all badges with user profile info using ADMIN client
         const { data: badges, error: badgeError } = await supabaseAdmin
             .from('badges')
-            .select('*')
+            .select(`
+                *,
+                profiles (
+                    first_name,
+                    last_name,
+                    designation,
+                    email
+                )
+            `)
             .order('created_at', { ascending: false })
 
         if (badgeError) throw badgeError

@@ -132,7 +132,9 @@ export default function AdminDashboard() {
 
     const filteredBadges = badges.filter((badge: any) =>
         badge.badge_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        badge.event_name.toLowerCase().includes(searchTerm.toLowerCase())
+        badge.event_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        badge.profiles?.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        badge.profiles?.last_name?.toLowerCase().includes(searchTerm.toLowerCase())
     )
 
     const handleSignOut = async () => {
@@ -266,6 +268,7 @@ export default function AdminDashboard() {
                             <thead className="bg-gray-50 text-gray-500 text-xs uppercase font-bold tracking-wider">
                                 <tr>
                                     <th className="px-6 py-4">Badge</th>
+                                    <th className="px-6 py-4">Recipient</th>
                                     <th className="px-6 py-4">Event</th>
                                     <th className="px-6 py-4">Date</th>
                                     <th className="px-6 py-4 text-right">Actions</th>
@@ -287,6 +290,14 @@ export default function AdminDashboard() {
                                                     <p className="font-bold text-navy-900">{badge.badge_name}</p>
                                                     <p className="text-xs text-gray-500 truncate max-w-[150px]">{badge.badge_description}</p>
                                                 </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div>
+                                                <p className="font-semibold text-navy-800">
+                                                    {badge.profiles?.first_name} {badge.profiles?.last_name}
+                                                </p>
+                                                <p className="text-xs text-gray-500">{badge.profiles?.designation || 'Member'}</p>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">

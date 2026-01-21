@@ -1,9 +1,15 @@
 import { supabase } from './supabase'
 
-export async function signUp(email: string, password: string) {
+export async function signUp(email: string, password: string, metadata: { first_name: string, last_name: string, designation: string }) {
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3002')
+
     const { data, error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+            data: metadata,
+            emailRedirectTo: `${appUrl}/auth/signin`
+        }
     })
 
     if (error) throw error
