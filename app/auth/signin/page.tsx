@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { signIn } from '@/lib/auth'
+import { signIn, isAdmin } from '@/lib/auth'
 import { Award, Mail, Lock, AlertCircle, ArrowRight } from 'lucide-react'
 
 export default function SignIn() {
@@ -20,7 +20,13 @@ export default function SignIn() {
 
         try {
             await signIn(email, password)
-            router.push('/dashboard')
+
+            // Check if user is admin and redirect accordingly
+            if (isAdmin(email)) {
+                router.push('/admin')
+            } else {
+                router.push('/dashboard')
+            }
         } catch (err: any) {
             setError(err.message || 'Failed to sign in. Please check your credentials.')
         } finally {

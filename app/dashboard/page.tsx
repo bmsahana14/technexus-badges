@@ -4,9 +4,9 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { getCurrentUser, signOut } from '@/lib/auth'
+import { getCurrentUser, signOut, isAdmin } from '@/lib/auth'
 import { supabase, type Badge } from '@/lib/supabase'
-import { Award, LogOut, Calendar, FileText, Loader2 } from 'lucide-react'
+import { Award, LogOut, Calendar, FileText, Loader2, ShieldCheck } from 'lucide-react'
 
 export default function Dashboard() {
     const router = useRouter()
@@ -88,13 +88,23 @@ export default function Dashboard() {
                                 </div>
                             </Link>
                         </div>
-                        <div className="flex items-center space-x-4">
+                        <div className="flex items-center space-x-2 sm:space-x-4">
+                            {user && isAdmin(user.email) && (
+                                <Link
+                                    href="/admin"
+                                    className="flex items-center space-x-2 px-3 py-2 bg-primary-50 text-primary-700 hover:bg-primary-100 rounded-lg transition-colors text-sm font-semibold border border-primary-200"
+                                >
+                                    <ShieldCheck className="w-4 h-4" />
+                                    <span className="hidden sm:inline">Admin Portal</span>
+                                    <span className="sm:hidden">Admin</span>
+                                </Link>
+                            )}
                             <button
                                 onClick={handleSignOut}
-                                className="flex items-center space-x-2 px-4 py-2 text-gray-700 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                className="flex items-center space-x-2 px-3 py-2 text-gray-700 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors text-sm font-medium"
                             >
-                                <LogOut className="w-5 h-5" />
-                                <span className="font-medium">Sign Out</span>
+                                <LogOut className="w-4 h-4" />
+                                <span className="hidden sm:inline">Sign Out</span>
                             </button>
                         </div>
                     </div>
