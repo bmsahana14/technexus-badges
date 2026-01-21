@@ -46,12 +46,12 @@ export default function Home() {
                         Simple, trustworthy, and designed for your success.
                     </p>
 
-                    <div className="flex justify-center space-x-4">
-                        <Link href="/auth/signup" className="btn-primary text-lg px-8 py-4">
-                            Create Account
+                    <div className="flex flex-col sm:flex-row justify-center items-center space-y-4 sm:space-y-0 sm:space-x-4">
+                        <Link href="/auth/signup" className="btn-primary text-lg px-8 py-4 w-full sm:w-auto">
+                            Get Your Badges
                         </Link>
-                        <Link href="/auth/signin" className="btn-secondary text-lg px-8 py-4">
-                            Sign In
+                        <Link href="/admin" className="btn-secondary text-lg px-8 py-4 w-full sm:w-auto border-primary-200">
+                            Admin Portal
                         </Link>
                     </div>
                 </div>

@@ -34,7 +34,7 @@ export default function IssueBadgePage() {
                 toast.error('Access denied. Administrator privileges required.')
                 return
             }
-            setPageLoading(false)
+            setPageLoading(false) // Only stop loading if we are verified
         } catch (error) {
             router.push('/auth/signin')
         }

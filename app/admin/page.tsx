@@ -41,16 +41,20 @@ export default function AdminDashboard() {
     const checkAuth = async () => {
         try {
             const user = await getCurrentUser()
+            console.log('Admin Auth Check - User:', user?.email)
+            console.log('Admin Auth Check - IsAdmin:', user ? isAdmin(user.email) : 'No user')
+
             if (!user || !isAdmin(user.email)) {
+                console.log('Admin Auth Check - Denied. Redirecting...')
                 router.push('/auth/signin')
                 toast.error('Access denied. Administrator privileges required.')
                 return
             }
             await loadData()
+            setLoading(false) // Only stop loading if we are verified
         } catch (error) {
+            console.error('Admin Auth Check - EXCEPTION:', error)
             router.push('/auth/signin')
-        } finally {
-            setLoading(false)
         }
     }
 
