@@ -13,6 +13,7 @@ export default function SignUp() {
     const [confirmPassword, setConfirmPassword] = useState('')
     const [error, setError] = useState('')
     const [success, setSuccess] = useState(false)
+    const [needsConfirmation, setNeedsConfirmation] = useState(false)
     const [loading, setLoading] = useState(false)
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -34,11 +35,18 @@ export default function SignUp() {
         }
 
         try {
-            await signUp(email, password)
+            const data = await signUp(email, password)
             setSuccess(true)
-            setTimeout(() => {
-                router.push('/dashboard')
-            }, 2000)
+
+            // If Supabase returns a session, they are auto-logged in
+            // If not, it means they need to confirm their email
+            if (data?.session) {
+                setTimeout(() => {
+                    router.push('/dashboard')
+                }, 2000)
+            } else {
+                setNeedsConfirmation(true)
+            }
         } catch (err: any) {
             setError(err.message || 'Failed to create account. Please try again.')
         } finally {
@@ -53,8 +61,22 @@ export default function SignUp() {
                     <div className="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                         <CheckCircle className="w-10 h-10 text-green-600" />
                     </div>
-                    <h2 className="text-2xl font-bold text-navy-900 mb-2">Account Created!</h2>
-                    <p className="text-gray-600">Redirecting to your dashboard...</p>
+                    <h2 className="text-2xl font-bold text-navy-900 mb-2">
+                        {needsConfirmation ? 'Check your email!' : 'Account Created!'}
+                    </h2>
+                    <p className="text-gray-600">
+                        {needsConfirmation
+                            ? "We've sent a confirmation link to your email. Please click it to activate your account."
+                            : 'Redirecting to your dashboard...'}
+                    </p>
+                    {needsConfirmation && (
+                        <Link
+                            href="/auth/signin"
+                            className="mt-6 btn-primary inline-flex items-center px-6 py-2"
+                        >
+                            Return to Sign In
+                        </Link>
+                    )}
                 </div>
             </div>
         )
