@@ -26,8 +26,6 @@ export async function POST(request: NextRequest) {
 
     // Send email
     console.log('Attempting to send email to:', to_email)
-    // Send email
-    console.log('Attempting to send email to:', to_email)
     const { data, error } = await resend.emails.send({
       from: 'TechNexus Community <onboarding@resend.dev>',
       to: to_email,

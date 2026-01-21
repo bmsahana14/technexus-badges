@@ -64,14 +64,24 @@ export default function AdminDashboard() {
             // Get user session for authentication
             const { data: { session } } = await supabase.auth.getSession()
 
+            if (!session?.access_token) {
+                toast.error('Session expired. Please sign in.')
+                router.push('/auth/signin')
+                return
+            }
+
             const res = await fetch('/api/admin/data', {
                 headers: {
-                    'Authorization': `Bearer ${session?.access_token}`
+                    'Authorization': `Bearer ${session.access_token}`
                 }
             })
 
             if (!res.ok) {
                 const errorData = await res.json()
+                console.error('Admin Data Fetch Error:', errorData)
+                if (errorData.debug) {
+                    console.error('Debug Info:', errorData.debug)
+                }
                 throw new Error(errorData.error || 'Failed to fetch admin data')
             }
 

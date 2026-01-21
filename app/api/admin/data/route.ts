@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
         const authHeader = request.headers.get('Authorization')
         const token = authHeader?.split(' ')[1]
 
-        if (!token) {
+        if (!token || token === 'undefined') {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
@@ -25,8 +25,20 @@ export async function GET(request: NextRequest) {
 
         // Check against admin email list
         const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase())
+
+        console.log('Admin Check - User Email:', user.email)
+        console.log('Admin Check - Admin Emails List:', adminEmails)
+        console.log('Admin Check - Is Admin:', adminEmails.includes(user.email?.toLowerCase() || ''))
+
         if (!adminEmails.includes(user.email?.toLowerCase() || '')) {
-            return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+            console.log('Admin Check - FORBIDDEN: User email not in admin list')
+            return NextResponse.json({
+                error: 'Forbidden - Admin access required',
+                debug: {
+                    userEmail: user.email,
+                    adminEmails: adminEmails
+                }
+            }, { status: 403 })
         }
 
         // 2. Fetch all badges using ADMIN client
