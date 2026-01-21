@@ -57,14 +57,21 @@ export default function AdminDashboard() {
     const loadData = async () => {
         setRefreshing(true)
         try {
-            // Get all badges
-            const { data: allBadges, error: badgeError } = await supabase
-                .from('badges')
-                .select('*')
-                .order('created_at', { ascending: false })
+            // Get user session for authentication
+            const { data: { session } } = await supabase.auth.getSession()
 
-            if (badgeError) throw badgeError
+            const res = await fetch('/api/admin/data', {
+                headers: {
+                    'Authorization': `Bearer ${session?.access_token}`
+                }
+            })
 
+            if (!res.ok) {
+                const errorData = await res.json()
+                throw new Error(errorData.error || 'Failed to fetch admin data')
+            }
+
+            const { badges: allBadges } = await res.json()
             setBadges(allBadges || [])
 
             // Calculate stats
@@ -79,9 +86,9 @@ export default function AdminDashboard() {
                     return badgeDate.toDateString() === today.toDateString()
                 }).length || 0
             })
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error fetching data:', error)
-            toast.error('Failed to load dashboard data')
+            toast.error(error.message || 'Failed to load dashboard data')
         } finally {
             setRefreshing(false)
         }

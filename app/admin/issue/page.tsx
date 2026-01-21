@@ -109,7 +109,7 @@ export default function IssueBadgePage() {
                     to_email: form.user_email,
                     badge_name: form.badge_name,
                     event_name: form.event_name,
-                    badge_link: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3002'}/dashboard`
+                    badge_link: `${window.location.origin}/dashboard`
                 }),
             })
 
