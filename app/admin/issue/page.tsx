@@ -99,7 +99,7 @@ export default function IssueBadgePage() {
 
             const data = await res.json()
 
-            if (!res.ok) throw new Error(data.error || 'Failed to create badge')
+            if (!res.ok) throw new Error(data.message || data.error || 'Failed to create badge')
 
             // 3. Send the email notification
             const emailRes = await fetch('/api/send-badge-email', {

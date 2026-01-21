@@ -20,21 +20,21 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        // Find user by email
-        const { data: userData, error: userError } = await supabase.auth.admin.listUsers()
+        // Find user by email in profiles table instead of listUsers
+        // This is faster and ensures we have the profile record needed for the foreign key
+        const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('id, email')
+            .eq('email', user_email.toLowerCase())
+            .single()
 
-        if (userError) {
+        if (profileError || !profile) {
+            console.error('Profile not found for email:', user_email, profileError)
             return NextResponse.json(
-                { error: 'Failed to find user' },
-                { status: 500 }
-            )
-        }
-
-        const user = userData.users.find(u => u.email === user_email)
-
-        if (!user) {
-            return NextResponse.json(
-                { error: 'User not found' },
+                {
+                    error: 'Recipient not found',
+                    message: `No profile found for ${user_email}. The user must sign up/register first.`
+                },
                 { status: 404 }
             )
         }
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
         const { data: badge, error: badgeError } = await supabase
             .from('badges')
             .insert({
-                user_id: user.id,
+                user_id: profile.id,
                 badge_name,
                 badge_description: badge_description || '',
                 badge_image_url: badge_image_url || '',
@@ -54,8 +54,13 @@ export async function POST(request: NextRequest) {
             .single()
 
         if (badgeError) {
+            console.error('DATABASE ERROR creating badge:', badgeError)
             return NextResponse.json(
-                { error: 'Failed to create badge' },
+                {
+                    error: 'Failed to create badge',
+                    details: badgeError,
+                    message: badgeError.message
+                },
                 { status: 500 }
             )
         }
