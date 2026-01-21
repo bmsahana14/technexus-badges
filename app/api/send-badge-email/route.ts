@@ -94,14 +94,18 @@ export async function POST(request: NextRequest) {
     })
 
     if (error) {
-      console.error('Resend Error Details:', error)
+      console.error('RESEND ERROR:', error)
       return NextResponse.json(
-        { error: 'Failed to send email', details: error },
+        {
+          error: 'Failed to send email',
+          details: error,
+          message: 'If using Resend free tier, you can only send to your own email address unless you verify a domain.'
+        },
         { status: 500 }
       )
     }
 
-    console.log('Email sent successfully:', data)
+    console.log('EMAIL SUCCESS:', data)
     return NextResponse.json({
       success: true,
       message: 'Email sent successfully',

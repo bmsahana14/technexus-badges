@@ -114,7 +114,9 @@ export default function IssueBadgePage() {
             })
 
             if (!emailRes.ok) {
-                toast.error('Badge created, but email failed to send')
+                const emailData = await emailRes.json()
+                toast.error(emailData.message || 'Badge created, but email failed to send')
+                console.error('Email error:', emailData)
             } else {
                 toast.success('Badge issued successfully and email sent!')
             }
