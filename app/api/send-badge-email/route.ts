@@ -25,6 +25,9 @@ export async function POST(request: NextRequest) {
     const badgeUrl = badge_link || `${appUrl}/dashboard`
 
     // Send email
+    console.log('Attempting to send email to:', to_email)
+    // Send email
+    console.log('Attempting to send email to:', to_email)
     const { data, error } = await resend.emails.send({
       from: 'TechNexus Community <onboarding@resend.dev>',
       to: to_email,
@@ -93,13 +96,14 @@ export async function POST(request: NextRequest) {
     })
 
     if (error) {
-      console.error('Email send error:', error)
+      console.error('Resend Error Details:', error)
       return NextResponse.json(
-        { error: 'Failed to send email' },
+        { error: 'Failed to send email', details: error },
         { status: 500 }
       )
     }
 
+    console.log('Email sent successfully:', data)
     return NextResponse.json({
       success: true,
       message: 'Email sent successfully',
@@ -107,7 +111,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error: any) {
-    console.error('Email API error:', error)
+    console.error('Email API API error:', error)
     return NextResponse.json(
       { error: error.message || 'Internal server error' },
       { status: 500 }
