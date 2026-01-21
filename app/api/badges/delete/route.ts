@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js'
+import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 import { NextResponse } from 'next/server'
 
 export async function DELETE(request: Request) {
@@ -8,11 +8,6 @@ export async function DELETE(request: Request) {
         if (!id) {
             return NextResponse.json({ error: 'Badge ID is required' }, { status: 400 })
         }
-
-        const supabase = createClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.SUPABASE_SERVICE_ROLE_KEY!
-        )
 
         const { error } = await supabase
             .from('badges')

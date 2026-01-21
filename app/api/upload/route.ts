@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js'
+import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 import { NextResponse } from 'next/server'
 
 export async function POST(request: Request) {
@@ -10,11 +10,6 @@ export async function POST(request: Request) {
         if (!file || !fileName) {
             return NextResponse.json({ error: 'File and fileName are required' }, { status: 400 })
         }
-
-        const supabase = createClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.SUPABASE_SERVICE_ROLE_KEY!
-        )
 
         // Upload to storage using service role (bypasses RLS)
         const { data, error } = await supabase.storage
