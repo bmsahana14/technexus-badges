@@ -40,18 +40,30 @@ export default function AdminDashboard() {
 
     const checkAuth = async () => {
         try {
-            const user = await getCurrentUser()
-            console.log('Admin Auth Check - User:', user?.email)
-            console.log('Admin Auth Check - IsAdmin:', user ? isAdmin(user.email) : 'No user')
+            // Check session first (fast)
+            const { data: { session } } = await supabase.auth.getSession()
+            const user = session?.user
 
-            if (!user || !isAdmin(user.email)) {
-                console.log('Admin Auth Check - Denied. Redirecting...')
-                router.push('/auth/signin')
-                toast.error('Access denied. Administrator privileges required.')
+            if (!user) {
+                router.push('/auth/signin?next=/admin')
                 return
             }
+
+            if (!isAdmin(user.email)) {
+                toast.error('Access denied. Administrator privileges required.')
+                router.push('/dashboard')
+                return
+            }
+
+            // Secure double-check
+            const secureUser = await getCurrentUser()
+            if (!secureUser || !isAdmin(secureUser.email)) {
+                router.push('/dashboard')
+                return
+            }
+
             await loadData()
-            setLoading(false) // Only stop loading if we are verified
+            setLoading(false)
         } catch (error) {
             console.error('Admin Auth Check - EXCEPTION:', error)
             router.push('/auth/signin')
@@ -199,10 +211,10 @@ export default function AdminDashboard() {
                     <div className="flex flex-col sm:flex-row gap-3">
                         <Link
                             href="/admin/bulk"
-                            className="btn-secondary flex items-center justify-center space-x-2 py-3 px-6"
+                            className="btn-secondary flex items-center justify-center space-x-2 py-3 px-8 text-primary-600 border-primary-100"
                         >
-                            <Upload className="w-5 h-5" />
-                            <span>Bulk Issue (CSV)</span>
+                            <Mail className="w-5 h-5" />
+                            <span className="text-lg">Bulk Issue</span>
                         </Link>
                         <Link
                             href="/admin/issue"
@@ -264,7 +276,7 @@ export default function AdminDashboard() {
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                             <input
                                 type="text"
-                                placeholder="Search badges or events..."
+                                placeholder="Search badges, recipients or events..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="pl-10 pr-4 py-2 bg-gray-50 border-none rounded-lg text-sm focus:ring-2 focus:ring-primary-200 outline-none w-full md:w-64"
@@ -302,12 +314,21 @@ export default function AdminDashboard() {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <div>
-                                                <p className="font-semibold text-navy-800">
-                                                    {badge.profiles?.first_name} {badge.profiles?.last_name}
-                                                </p>
-                                                <p className="text-xs text-gray-500">{badge.profiles?.designation || 'Member'}</p>
-                                            </div>
+                                            {badge.profiles ? (
+                                                <div>
+                                                    <p className="font-semibold text-navy-800">
+                                                        {badge.profiles.first_name} {badge.profiles.last_name}
+                                                    </p>
+                                                    <p className="text-xs text-gray-500">{badge.profiles.designation || 'Member'}</p>
+                                                    <p className="text-[10px] text-gray-400">{badge.profiles.email}</p>
+                                                </div>
+                                            ) : (
+                                                <div>
+                                                    <p className="font-semibold text-gray-500 italic">Unclaimed Badge</p>
+                                                    <p className="text-xs text-primary-600 font-medium">{badge.recipient_email}</p>
+                                                    <p className="text-[10px] bg-primary-50 text-primary-600 w-fit px-1.5 py-0.5 rounded mt-1">Pending Registration</p>
+                                                </div>
+                                            )}
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs font-semibold">
@@ -342,7 +363,7 @@ export default function AdminDashboard() {
 
                                 {filteredBadges.length === 0 && (
                                     <tr>
-                                        <td colSpan={4} className="px-6 py-12 text-center">
+                                        <td colSpan={5} className="px-6 py-12 text-center">
                                             <div className="bg-gray-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                                                 <Search className="w-8 h-8 text-gray-300" />
                                             </div>
@@ -363,7 +384,7 @@ export default function AdminDashboard() {
                         </div>
                         <div>
                             <h4 className="font-bold text-navy-900">Email System Active</h4>
-                            <p className="text-sm text-gray-500 mt-1">Automatic notifications are sent via Resend for every new badge issued.</p>
+                            <p className="text-sm text-gray-500 mt-1">Automatic notifications are sent via Brevo for every new badge issued.</p>
                         </div>
                     </div>
                     <div className="card p-6 bg-white border-none shadow-sm flex items-start space-x-4">
@@ -371,8 +392,8 @@ export default function AdminDashboard() {
                             <Plus className="w-6 h-6 text-green-600" />
                         </div>
                         <div>
-                            <h4 className="font-bold text-navy-900">Bulk Issue Coming Soon</h4>
-                            <p className="text-sm text-gray-500 mt-1">We are working on CSV upload support to issue hundreds of badges at once.</p>
+                            <h4 className="font-bold text-navy-900">Bulk Issue Enabled</h4>
+                            <p className="text-sm text-gray-500 mt-1">CSV upload support is active. You can issue hundreds of badges at once using the Bulk Issue tool.</p>
                         </div>
                     </div>
                 </div>

@@ -23,6 +23,11 @@ export default function BulkIssuePage() {
     const [bulkData, setBulkData] = useState<BulkRequest[]>([])
     const [progress, setProgress] = useState(0)
 
+    // Image state for bulk
+    const [bulkImageFile, setBulkImageFile] = useState<File | null>(null)
+    const [bulkImagePreview, setBulkImagePreview] = useState<string | null>(null)
+    const [bulkImageUrl, setBulkImageUrl] = useState('')
+
     useEffect(() => {
         checkAuth()
     }, [])
@@ -89,76 +94,111 @@ export default function BulkIssuePage() {
         reader.readAsText(file)
     }
 
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0]
+            setBulkImageFile(file)
+            setBulkImagePreview(URL.createObjectURL(file))
+        }
+    }
+
+    const clearImage = () => {
+        setBulkImageFile(null)
+        setBulkImagePreview(null)
+    }
+
     const processBulk = async () => {
         if (bulkData.length === 0) return
         setLoading(true)
         setProgress(0)
 
-        for (let i = 0; i < bulkData.length; i++) {
-            const request = bulkData[i]
+        try {
+            let finalImageUrl = bulkImageUrl
 
-            // Update status to processing
-            setBulkData(prev => {
-                const newData = [...prev]
-                newData[i].status = 'processing'
-                return newData
-            })
+            // 1. Upload common image once if provided
+            if (bulkImageFile) {
+                const fileExt = bulkImageFile.name.split('.').pop()
+                const fileName = `bulk-${Date.now()}.${fileExt}`
 
-            try {
-                // 1. Create badge in DB
-                const badgeRes = await fetch('/api/badges', {
+                const formData = new FormData()
+                formData.append('file', bulkImageFile)
+                formData.append('fileName', fileName)
+
+                const uploadRes = await fetch('/api/upload', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        user_email: request.email,
-                        badge_name: request.badge_name,
-                        event_name: request.event_name,
-                        badge_description: request.description
-                    })
+                    body: formData
                 })
 
-                const badgeResult = await badgeRes.json()
-                if (!badgeRes.ok) throw new Error(badgeResult.message || badgeResult.error)
-
-                // 2. Send email via Brevo
-                const emailRes = await fetch('/api/send-badge-email', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        to_email: request.email,
-                        badge_name: request.badge_name,
-                        event_name: request.event_name,
-                    })
-                })
-
-                if (!emailRes.ok) {
-                    const emailResult = await emailRes.json()
-                    throw new Error(`Badge created but email failed: ${emailResult.message || 'Error'}`)
-                }
-
-                // Update status to success
-                setBulkData(prev => {
-                    const newData = [...prev]
-                    newData[i].status = 'success'
-                    return newData
-                })
-
-            } catch (err: any) {
-                console.error(`Request ${i} failed:`, err)
-                setBulkData(prev => {
-                    const newData = [...prev]
-                    newData[i].status = 'error'
-                    newData[i].message = err.message
-                    return newData
-                })
+                if (!uploadRes.ok) throw new Error('Failed to upload bulk image')
+                const { publicUrl } = await uploadRes.json()
+                finalImageUrl = publicUrl
             }
 
-            // Update overall progress
-            setProgress(Math.round(((i + 1) / bulkData.length) * 100))
-        }
+            // 2. Process each recipient
+            for (let i = 0; i < bulkData.length; i++) {
+                const request = bulkData[i]
 
-        setLoading(false)
-        toast.success('Bulk processing complete!')
+                setBulkData(prev => {
+                    const newData = [...prev]
+                    newData[i].status = 'processing'
+                    return newData
+                })
+
+                try {
+                    // Create badge in DB
+                    const badgeRes = await fetch('/api/badges', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            user_email: request.email,
+                            badge_name: request.badge_name,
+                            event_name: request.event_name,
+                            badge_description: request.description,
+                            badge_image_url: finalImageUrl
+                        })
+                    })
+
+                    const badgeResult = await badgeRes.json()
+                    if (!badgeRes.ok) throw new Error(badgeResult.message || badgeResult.error)
+
+                    // Send email
+                    await fetch('/api/send-badge-email', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            to_email: request.email,
+                            badge_name: request.badge_name,
+                            event_name: request.event_name,
+                            is_new_user: badgeResult.requires_registration
+                        })
+                    })
+
+                    setBulkData(prev => {
+                        const newData = [...prev]
+                        newData[i].status = 'success'
+                        if (badgeResult.requires_registration) {
+                            newData[i].message = 'Pending Registration'
+                        }
+                        return newData
+                    })
+
+                } catch (err: any) {
+                    setBulkData(prev => {
+                        const newData = [...prev]
+                        newData[i].status = 'error'
+                        newData[i].message = err.message
+                        return newData
+                    })
+                }
+
+                setProgress(Math.round(((i + 1) / bulkData.length) * 100))
+            }
+        } catch (err: any) {
+            toast.error(err.message)
+        } finally {
+            setLoading(false)
+            toast.success('Bulk processing complete!')
+        }
     }
 
     if (pageLoading) {
@@ -183,16 +223,16 @@ export default function BulkIssuePage() {
                 </div>
 
                 {/* Setup Section */}
-                <div className="grid md:grid-cols-2 gap-6 mb-8">
+                <div className="grid md:grid-cols-3 gap-6 mb-8">
                     <div className="card p-6 bg-white flex flex-col items-center justify-center text-center">
                         <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center mb-4">
                             <Download className="w-6 h-6 text-primary-600" />
                         </div>
-                        <h3 className="font-bold text-navy-900 mb-2">1. Get the Template</h3>
-                        <p className="text-sm text-gray-500 mb-4">Download our CSV structure so your data matches our system.</p>
-                        <button onClick={downloadTemplate} className="btn-secondary py-2 px-4 flex items-center space-x-2">
+                        <h3 className="font-bold text-navy-900 mb-2">1. Get Template</h3>
+                        <p className="text-xs text-gray-500 mb-4">Download CSV structure.</p>
+                        <button onClick={downloadTemplate} className="btn-secondary py-2 px-4 flex items-center space-x-2 text-xs">
                             <FileJson className="w-4 h-4" />
-                            <span>Download CSV Template</span>
+                            <span>Template</span>
                         </button>
                     </div>
 
@@ -200,12 +240,12 @@ export default function BulkIssuePage() {
                         <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-4">
                             <Upload className="w-6 h-6 text-green-600" />
                         </div>
-                        <h3 className="font-bold text-navy-900 mb-2">2. Upload your CSV</h3>
-                        <p className="text-sm text-gray-500 mb-4">Select your completed file to preview the data before sending.</p>
+                        <h3 className="font-bold text-navy-900 mb-2">2. Upload CSV</h3>
+                        <p className="text-xs text-gray-500 mb-4">Select your completed file.</p>
                         <div className="relative">
-                            <button className="btn-primary py-2 px-6 flex items-center space-x-2">
+                            <button className="btn-primary py-2 px-4 flex items-center space-x-2 text-xs">
                                 <Upload className="w-4 h-4" />
-                                <span>Upload File</span>
+                                <span>Upload</span>
                             </button>
                             <input
                                 type="file"
@@ -215,33 +255,83 @@ export default function BulkIssuePage() {
                             />
                         </div>
                     </div>
+
+                    <div className="card p-6 bg-white flex flex-col items-center justify-center text-center relative overflow-hidden">
+                        <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mb-4">
+                            <Award className="w-6 h-6 text-purple-600" />
+                        </div>
+                        <h3 className="font-bold text-navy-900 mb-2">3. Badge Image</h3>
+                        <p className="text-xs text-gray-500 mb-4">(Optional) Set for all.</p>
+
+                        {bulkImagePreview ? (
+                            <div className="relative w-full h-10 flex items-center justify-center bg-gray-50 rounded-lg mb-2">
+                                <img src={bulkImagePreview} alt="Preview" className="h-full object-contain" />
+                                <button onClick={clearImage} className="absolute -top-1 -right-1 bg-red-500 text-white p-0.5 rounded-full shadow-sm">
+                                    <X className="w-3 h-3" />
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="relative mb-2">
+                                <button className="btn-secondary py-2 px-4 flex items-center space-x-2 text-xs">
+                                    <Upload className="w-4 h-4" />
+                                    <span>Upload Image</span>
+                                </button>
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handleImageChange}
+                                    className="absolute inset-0 opacity-0 cursor-pointer"
+                                />
+                            </div>
+                        )}
+
+                        <div className="w-full mt-2">
+                            <input
+                                type="url"
+                                placeholder="Or paste image URL..."
+                                className="w-full text-[10px] p-2 bg-gray-50 border border-gray-100 rounded-lg outline-none focus:ring-1 focus:ring-primary-200"
+                                value={bulkImageUrl}
+                                onChange={(e) => setBulkImageUrl(e.target.value)}
+                                disabled={!!bulkImageFile}
+                            />
+                        </div>
+                    </div>
                 </div>
 
                 {/* Data Preview & Action */}
-                {bulkData.length > 0 && (
-                    <div className="card bg-white shadow-xl overflow-hidden border-none">
-                        <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+                {bulkData.length > 0 ? (
+                    <div className="card bg-white shadow-xl overflow-hidden border-none animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <div className="p-6 border-b border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4">
                             <div>
-                                <h3 className="font-bold text-navy-900">Ready to Process</h3>
-                                <p className="text-sm text-gray-500">{bulkData.length} records detected</p>
+                                <h3 className="font-bold text-navy-900 text-xl">Ready to Process</h3>
+                                <p className="text-sm text-gray-500">{bulkData.length} records detected and ready for issuance</p>
                             </div>
-                            <button
-                                onClick={processBulk}
-                                disabled={loading}
-                                className="btn-primary px-8 py-3 flex items-center space-x-2 disabled:opacity-50"
-                            >
-                                {loading ? (
-                                    <>
-                                        <Loader2 className="w-5 h-5 animate-spin" />
-                                        <span>Processing {progress}%</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <Send className="w-5 h-5" />
-                                        <span>Issue {bulkData.length} Badges Now</span>
-                                    </>
-                                )}
-                            </button>
+                            <div className="flex items-center space-x-3 w-full sm:w-auto">
+                                <button
+                                    onClick={() => setBulkData([])}
+                                    disabled={loading}
+                                    className="px-4 py-3 text-gray-400 hover:text-red-600 transition-colors text-sm font-semibold"
+                                >
+                                    Clear All
+                                </button>
+                                <button
+                                    onClick={processBulk}
+                                    disabled={loading}
+                                    className="btn-primary px-10 py-4 flex items-center justify-center space-x-3 disabled:opacity-50 shadow-lg shadow-primary-200 flex-1 sm:flex-none"
+                                >
+                                    {loading ? (
+                                        <>
+                                            <Loader2 className="w-6 h-6 animate-spin" />
+                                            <span className="text-lg">Processing {progress}%</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Send className="w-6 h-6" />
+                                            <span className="text-lg font-bold">Issue {bulkData.length} Badges Now</span>
+                                        </>
+                                    )}
+                                </button>
+                            </div>
                         </div>
 
                         {/* Progress Bar */}
@@ -274,7 +364,12 @@ export default function BulkIssuePage() {
                                             <td className="px-6 py-4">
                                                 {row.status === 'pending' && <span className="bg-gray-100 text-gray-500 px-2 py-1 rounded text-xs">Waiting</span>}
                                                 {row.status === 'processing' && <span className="text-primary-600 animate-pulse flex items-center"><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Working...</span>}
-                                                {row.status === 'success' && <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold flex items-center w-fit"><CheckCircle2 className="w-3 h-3 mr-1" /> Success</span>}
+                                                {row.status === 'success' && (
+                                                    <div className="flex flex-col">
+                                                        <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold flex items-center w-fit"><CheckCircle2 className="w-3 h-3 mr-1" /> Success</span>
+                                                        {row.message && <span className="text-[10px] text-primary-600 mt-1">{row.message}</span>}
+                                                    </div>
+                                                )}
                                                 {row.status === 'error' && (
                                                     <div className="flex flex-col">
                                                         <span className="bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold flex items-center w-fit"><AlertCircle className="w-3 h-3 mr-1" /> Error</span>
@@ -286,6 +381,22 @@ export default function BulkIssuePage() {
                                     ))}
                                 </tbody>
                             </table>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="card bg-white border-2 border-dashed border-gray-200 p-12 text-center animate-in fade-in duration-500">
+                        <div className="bg-gray-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <FileJson className="w-10 h-10 text-gray-300" />
+                        </div>
+                        <h3 className="text-xl font-bold text-gray-900 mb-2">Ready to Start?</h3>
+                        <p className="text-gray-500 max-w-sm mx-auto mb-6">
+                            Once you upload your CSV file in Step 2, you'll see a preview of all recipients and the "Issue Badges" button here.
+                        </p>
+                        <div className="inline-flex items-center text-primary-600 font-semibold text-sm">
+                            <div className="w-8 h-8 bg-primary-50 rounded-full flex items-center justify-center mr-2">
+                                <AlertCircle className="w-4 h-4" />
+                            </div>
+                            Awaiting CSV Upload...
                         </div>
                     </div>
                 )}

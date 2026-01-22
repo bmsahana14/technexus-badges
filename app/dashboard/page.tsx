@@ -6,7 +6,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { getCurrentUser, signOut, isAdmin } from '@/lib/auth'
 import { supabase, type Badge } from '@/lib/supabase'
-import { Award, LogOut, Calendar, FileText, Loader2, ShieldCheck, User, Settings, X, Save } from 'lucide-react'
+import { Award, LogOut, Calendar, FileText, Loader2, ShieldCheck, User, Settings, X, Save, Linkedin, Share2, Download } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 
 export default function Dashboard() {
@@ -15,6 +15,71 @@ export default function Dashboard() {
     const [badges, setBadges] = useState<Badge[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState('')
+
+    const handleDownload = async (imageUrl: string, badgeName: string) => {
+        console.log('Download requested for:', imageUrl)
+        try {
+            if (!imageUrl) {
+                toast.error('No image available for download')
+                return
+            }
+
+            // Optimization: If it's a Supabase public URL, we can force download via query param
+            let downloadUrl = imageUrl
+            if (imageUrl.includes('supabase.co/storage/v1/object/public')) {
+                const separator = imageUrl.includes('?') ? '&' : '?'
+                downloadUrl = `${imageUrl}${separator}download=${encodeURIComponent(badgeName.replace(/\s+/g, '_'))}.png`
+
+                console.log('Detected Supabase URL, using force-download:', downloadUrl)
+                // For Supabase download links, simple window.location or <a> tag works best
+                const link = document.createElement('a')
+                link.href = downloadUrl
+                link.target = '_self'
+                document.body.appendChild(link)
+                link.click()
+                document.body.removeChild(link)
+                toast.success('Download started!')
+                return
+            }
+
+            // Standard CORS fetch for other images
+            console.log('Attempting CORS fetch for external image...')
+            const response = await fetch(imageUrl, { mode: 'cors' })
+            if (!response.ok) throw new Error('Network response was not ok')
+
+            const blob = await response.blob()
+            const url = window.URL.createObjectURL(blob)
+            const link = document.createElement('a')
+            link.href = url
+            link.download = `${badgeName.replace(/\s+/g, '_')}_Badge.png`
+            document.body.appendChild(link)
+            link.click()
+            document.body.removeChild(link)
+            window.URL.revokeObjectURL(url)
+            toast.success('Download started!')
+        } catch (err) {
+            console.error('Download execution failed:', err)
+            // Final Fallback: Just open the image
+            window.open(imageUrl, '_blank')
+            toast.success('Opening image in new tab. You can right-click and Save As.')
+        }
+    }
+
+    const shareToLinkedIn = (badge: Badge) => {
+        console.log('LinkedIn share triggered for badge:', badge.badge_name)
+        const appUrl = 'https://technexus-badges-live.vercel.app'
+        const text = `I'm proud to share that I've earned the "${badge.badge_name}" badge from the TechNexus Community! 🚀\n\nCheck it out here: ${appUrl}`
+
+        // Share Intent works best for pre-filled text on desktop/mobile
+        const shareUrl = `https://www.linkedin.com/feed/?shareActive=true&text=${encodeURIComponent(text)}`
+
+        const popup = window.open(shareUrl, '_blank', 'width=600,height=600')
+        if (!popup) {
+            toast.error('Pop-up blocked! Please allow pop-ups to share on LinkedIn.')
+        } else {
+            toast.success('Redirecting to LinkedIn Feed...')
+        }
+    }
 
     // Profile Modal State
     const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
@@ -137,7 +202,7 @@ export default function Dashboard() {
                                 </div>
                                 <div>
                                     <h1 className="text-xl font-bold text-navy-800 group-hover:text-primary-600 transition-colors">TechNexus Community</h1>
-                                    <p className="text-sm text-gray-600">
+                                    <p className="text-sm text-gray-600 truncate max-w-[150px] sm:max-w-[300px]">
                                         {user?.first_name
                                             ? `${user.first_name} ${user.last_name} | ${user.designation}`
                                             : user?.email}
@@ -147,33 +212,37 @@ export default function Dashboard() {
                         </div>
                         <div className="flex items-center space-x-2 sm:space-x-4">
                             {user && (
-                                <button
-                                    onClick={() => setIsProfileModalOpen(true)}
-                                    className="flex items-center space-x-2 px-3 py-2 text-gray-700 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors text-sm font-medium border border-transparent hover:border-primary-100"
-                                >
-                                    <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center overflow-hidden border-2 border-primary-200">
-                                        <User className="w-5 h-5 text-primary-600" />
-                                    </div>
-                                    <span className="hidden sm:inline">Profile</span>
-                                </button>
+                                <>
+                                    <button
+                                        onClick={() => setIsProfileModalOpen(true)}
+                                        className="flex items-center space-x-2 px-3 py-2 text-gray-700 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors text-sm font-medium border border-transparent hover:border-primary-100"
+                                    >
+                                        <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center overflow-hidden border-2 border-primary-200">
+                                            <User className="w-5 h-5 text-primary-600" />
+                                        </div>
+                                        <span className="hidden sm:inline">Profile</span>
+                                    </button>
+
+                                    {isAdmin(user.email) && (
+                                        <Link
+                                            href="/admin"
+                                            className="flex items-center space-x-2 px-3 py-2 bg-primary-50 text-primary-700 hover:bg-primary-100 rounded-lg transition-colors text-sm font-semibold border border-primary-200"
+                                        >
+                                            <ShieldCheck className="w-4 h-4" />
+                                            <span className="hidden sm:inline">Admin Portal</span>
+                                            <span className="sm:hidden">Admin</span>
+                                        </Link>
+                                    )}
+
+                                    <button
+                                        onClick={handleSignOut}
+                                        className="flex items-center space-x-2 px-3 py-2 text-gray-700 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors text-sm font-medium"
+                                    >
+                                        <LogOut className="w-4 h-4" />
+                                        <span className="hidden sm:inline">Sign Out</span>
+                                    </button>
+                                </>
                             )}
-                            {user && isAdmin(user.email) && (
-                                <Link
-                                    href="/admin"
-                                    className="flex items-center space-x-2 px-3 py-2 bg-primary-50 text-primary-700 hover:bg-primary-100 rounded-lg transition-colors text-sm font-semibold border border-primary-200"
-                                >
-                                    <ShieldCheck className="w-4 h-4" />
-                                    <span className="hidden sm:inline">Admin Portal</span>
-                                    <span className="sm:hidden">Admin</span>
-                                </Link>
-                            )}
-                            <button
-                                onClick={handleSignOut}
-                                className="flex items-center space-x-2 px-3 py-2 text-gray-700 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors text-sm font-medium"
-                            >
-                                <LogOut className="w-4 h-4" />
-                                <span className="hidden sm:inline">Sign Out</span>
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -363,6 +432,23 @@ export default function Dashboard() {
                                                 {new Date(badge.issued_date).toLocaleDateString()}
                                             </span>
                                         </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-3 mt-4">
+                                        <button
+                                            onClick={() => handleDownload(badge.badge_image_url || '', badge.badge_name)}
+                                            className="flex items-center justify-center space-x-2 py-2.5 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all font-semibold text-sm active:scale-95"
+                                        >
+                                            <Download className="w-4 h-4" />
+                                            <span>Download</span>
+                                        </button>
+                                        <button
+                                            onClick={() => shareToLinkedIn(badge)}
+                                            className="flex items-center justify-center space-x-2 py-2.5 bg-[#0077B5] text-white rounded-xl hover:bg-[#005c8d] transition-all font-semibold text-sm shadow-md hover:shadow-lg active:scale-95"
+                                        >
+                                            <Linkedin className="w-4 h-4" />
+                                            <span>Share</span>
+                                        </button>
                                     </div>
                                 </div>
                             ))}

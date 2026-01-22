@@ -20,30 +20,19 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        // Find user by email in profiles table instead of listUsers
-        // This is faster and ensures we have the profile record needed for the foreign key
-        const { data: profile, error: profileError } = await supabase
+        // Find user by email in profiles table
+        const { data: profile } = await supabase
             .from('profiles')
             .select('id, email')
             .eq('email', user_email.toLowerCase())
             .single()
 
-        if (profileError || !profile) {
-            console.error('Profile not found for email:', user_email, profileError)
-            return NextResponse.json(
-                {
-                    error: 'Recipient not found',
-                    message: `No profile found for ${user_email}. The user must sign up/register first.`
-                },
-                { status: 404 }
-            )
-        }
-
-        // Create badge
+        // Create badge - link to profile if found, otherwise keep email for claiming
         const { data: badge, error: badgeError } = await supabase
             .from('badges')
             .insert({
-                user_id: profile.id,
+                user_id: profile?.id || null,
+                recipient_email: profile ? null : user_email.toLowerCase(),
                 badge_name,
                 badge_description: badge_description || '',
                 badge_image_url: badge_image_url || '',
@@ -68,7 +57,8 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({
             success: true,
             badge,
-            message: 'Badge created successfully'
+            message: profile ? 'Badge created successfully' : 'Badge created and pending user registration',
+            requires_registration: !profile
         })
 
     } catch (error: any) {

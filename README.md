@@ -17,7 +17,8 @@ TechNexus Community is a state-of-the-art web application designed for issuing, 
 - 🎨 **Custom Branding** - Fully integrated TechNexus Community visual identity and logo.
 - 🏅 **Badge Management** - Members can view and showcase their secure digital credentials.
 - 📤 **Admin Console** - Issue new badges with custom image uploads to Supabase Storage.
-- 📥 **Automated Outreach** - Instant email notifications via Resend for every badge issued.
+- 📦 **Bulk Issuance** - Issue badges to hundreds of students at once via CSV upload with real-time tracking.
+- 📥 **Automated Outreach** - High-volume email notifications via Brevo (300/day free) for every badge.
 - 📱 **Modern & Responsive** - A premium, mobile-optimized experience across all devices.
 
 ## 🚀 Quick Start
@@ -26,7 +27,7 @@ TechNexus Community is a state-of-the-art web application designed for issuing, 
 
 - Node.js 18+ installed
 - A Supabase account ([supabase.com](https://supabase.com))
-- A Resend account ([resend.com](https://resend.com))
+- A Brevo account ([brevo.com](https://brevo.com))
 
 ### Installation
 
@@ -52,8 +53,8 @@ SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 # Admin Setup (Whitelisted emails)
 NEXT_PUBLIC_ADMIN_EMAILS=admin@example.com,your-email@example.com
 
-# Email & App
-RESEND_API_KEY=your_resend_key
+# Email (Brevo) & App
+BREVO_API_KEY=your_brevo_api_key
 NEXT_PUBLIC_APP_URL=http://localhost:3002
 ```
 

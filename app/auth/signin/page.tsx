@@ -1,17 +1,43 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { signIn, isAdmin } from '@/lib/auth'
+import { signIn, isAdmin, getCurrentUser } from '@/lib/auth'
+import { useEffect, Suspense } from 'react'
 import { Award, Mail, Lock, AlertCircle, ArrowRight } from 'lucide-react'
 
-export default function SignIn() {
+function SignInForm() {
     const router = useRouter()
+    const searchParams = useSearchParams()
+    const nextPath = searchParams.get('next')
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [error, setError] = useState('')
     const [loading, setLoading] = useState(false)
+    const [pageLoading, setPageLoading] = useState(true)
+
+    useEffect(() => {
+        checkSession()
+    }, [])
+
+    const checkSession = async () => {
+        try {
+            const user = await getCurrentUser()
+            if (user) {
+                if (isAdmin(user.email)) {
+                    router.push('/admin')
+                } else {
+                    router.push('/dashboard')
+                }
+                return
+            }
+        } catch (err) {
+            // Not logged in, stay on page
+        } finally {
+            setPageLoading(false)
+        }
+    }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -19,10 +45,13 @@ export default function SignIn() {
         setLoading(true)
 
         try {
-            await signIn(email, password)
+            const trimmedEmail = email.trim()
+            await signIn(trimmedEmail, password)
 
             // Check if user is admin and redirect accordingly
-            if (isAdmin(email)) {
+            if (nextPath) {
+                router.push(nextPath)
+            } else if (isAdmin(trimmedEmail)) {
                 router.push('/admin')
             } else {
                 router.push('/dashboard')
@@ -32,6 +61,14 @@ export default function SignIn() {
         } finally {
             setLoading(false)
         }
+    }
+
+    if (pageLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                < Award className="w-12 h-12 text-primary-500 animate-spin" />
+            </div>
+        )
     }
 
     return (
@@ -121,5 +158,17 @@ export default function SignIn() {
                 </div>
             </div>
         </div>
+    )
+}
+
+export default function SignIn() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center">
+                < Award className="w-12 h-12 text-primary-500 animate-spin" />
+            </div>
+        }>
+            <SignInForm />
+        </Suspense>
     )
 }

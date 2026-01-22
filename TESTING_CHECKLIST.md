@@ -7,7 +7,7 @@ All required environment variables are set in Vercel:
 - ✅ `NEXT_PUBLIC_SUPABASE_URL`
 - ✅ `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - ✅ `SUPABASE_SERVICE_ROLE_KEY`
-- ✅ `RESEND_API_KEY`
+- ✅ `BREVO_API_KEY` (Replaced Resend)
 - ✅ `NEXT_PUBLIC_APP_URL`
 - ✅ `NEXT_PUBLIC_ADMIN_EMAILS` (bmsahana14@gmail.com)
 
@@ -83,18 +83,31 @@ All required environment variables are set in Vercel:
   6. Click "Issue Badge"
 
 - **Expected Result**:
-  - ✅ Badge created in database
-  - ✅ Email sent to recipient via Resend
+  - ✅ Badge created in database (connected to user OR marked pending)
+  - ✅ Email sent to recipient via Brevo
   - ✅ Success toast notification
   - ✅ Form resets
 
+#### ✅ Bulk Badge Issuance (CSV)
+- **URL**: https://technexus-badges-live.vercel.app/admin/bulk
+- **Test Steps**:
+  1. Download CSV Template
+  2. Populate with multiple emails (mix of registered and new)
+  3. Upload CSV and preview records
+  4. (Optional) Select a common Badge Image
+  5. Click "Issue Badges Now"
+- **Expected Result**:
+  - ✅ Progress bar tracks real-time progress
+  - ✅ Success/Error markers for each row
+  - ✅ Emails triggered for everyone in bulk
+
 #### ⚠️ Email Sending
-- **Service**: Resend API
-- **From**: `TechNexus Community <onboarding@resend.dev>`
+- **Service**: Brevo API (SMTP REST)
+- **Sender**: `TechNexus Community <bmsahana14@gmail.com>`
 - **Expected**:
-  - ✅ Email contains badge name and event
-  - ✅ "View Your Achievement" button links to dashboard
-  - ✅ Professional HTML template
+  - ✅ Registered Users: "Congratulations! View your achievement"
+  - ✅ Unregistered: "A Badge is Waiting for You! Join & Claim"
+  - ✅ Professional HTML template with community branding
 
 ---
 
@@ -239,6 +252,6 @@ For issues or questions:
 
 ---
 
-**Last Updated**: 2026-01-21 18:54 IST
-**Version**: 2.0.0
-**Status**: ✅ Production Ready
+**Last Updated**: 2026-01-22 12:50 IST
+**Version**: 3.0.0
+**Status**: ✅ Phase 3 Complete - Ready for Deploy

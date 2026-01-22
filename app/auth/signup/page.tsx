@@ -1,13 +1,16 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { signUp } from '@/lib/auth'
+import { signUp, isAdmin, getCurrentUser } from '@/lib/auth'
+import { useEffect, Suspense } from 'react'
 import { Award, Mail, Lock, AlertCircle, CheckCircle, User, Briefcase } from 'lucide-react'
 
-export default function SignUp() {
+function SignUpForm() {
     const router = useRouter()
+    const searchParams = useSearchParams()
+    const nextPath = searchParams.get('next')
     const [firstName, setFirstName] = useState('')
     const [lastName, setLastName] = useState('')
     const [designation, setDesignation] = useState('')
@@ -18,6 +21,29 @@ export default function SignUp() {
     const [success, setSuccess] = useState(false)
     const [needsConfirmation, setNeedsConfirmation] = useState(false)
     const [loading, setLoading] = useState(false)
+    const [pageLoading, setPageLoading] = useState(true)
+
+    useEffect(() => {
+        checkSession()
+    }, [])
+
+    const checkSession = async () => {
+        try {
+            const user = await getCurrentUser()
+            if (user) {
+                if (isAdmin(user.email)) {
+                    router.push('/admin')
+                } else {
+                    router.push('/dashboard')
+                }
+                return
+            }
+        } catch (err) {
+            // Not logged in
+        } finally {
+            setPageLoading(false)
+        }
+    }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -49,7 +75,13 @@ export default function SignUp() {
             // If not, it means they need to confirm their email
             if (data?.session) {
                 setTimeout(() => {
-                    router.push('/dashboard')
+                    if (nextPath) {
+                        router.push(nextPath)
+                    } else if (isAdmin(email)) {
+                        router.push('/admin')
+                    } else {
+                        router.push('/dashboard')
+                    }
                 }, 2000)
             } else {
                 setNeedsConfirmation(true)
@@ -85,6 +117,14 @@ export default function SignUp() {
                         </Link>
                     )}
                 </div>
+            </div>
+        )
+    }
+
+    if (pageLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                < Award className="w-12 h-12 text-primary-500 animate-spin" />
             </div>
         )
     }
@@ -248,5 +288,17 @@ export default function SignUp() {
                 </div>
             </div>
         </div>
+    )
+}
+
+export default function SignUp() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center">
+                < Award className="w-12 h-12 text-primary-500 animate-spin" />
+            </div>
+        }>
+            <SignUpForm />
+        </Suspense>
     )
 }

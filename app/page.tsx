@@ -1,7 +1,36 @@
+'use client'
+
 import Link from 'next/link'
-import { Shield, Award, Lock, CheckCircle } from 'lucide-react'
+import { Shield, Award, Lock, CheckCircle, ShieldCheck, LayoutDashboard, Loader2, LogOut } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { getCurrentUser, isAdmin, signOut } from '@/lib/auth'
+import { useRouter } from 'next/navigation'
 
 export default function Home() {
+    const router = useRouter()
+    const [user, setUser] = useState<any>(null)
+    const [loading, setLoading] = useState(true)
+
+    useEffect(() => {
+        checkUser()
+    }, [])
+
+    const checkUser = async () => {
+        try {
+            const currentUser = await getCurrentUser()
+            setUser(currentUser)
+        } catch (err) {
+            // Not logged in
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const handleSignOut = async () => {
+        await signOut()
+        setUser(null)
+        router.push('/')
+    }
     return (
         <div className="min-h-screen">
             {/* Header */}
@@ -17,12 +46,38 @@ export default function Home() {
                             </Link>
                         </div>
                         <div className="flex space-x-4">
-                            <Link href="/auth/signin" className="btn-secondary">
-                                Sign In
-                            </Link>
-                            <Link href="/auth/signup" className="btn-primary">
-                                Get Started
-                            </Link>
+                            {loading ? (
+                                <Loader2 className="w-6 h-6 text-primary-500 animate-spin" />
+                            ) : user ? (
+                                <>
+                                    {isAdmin(user.email) && (
+                                        <Link href="/admin" className="btn-secondary flex items-center space-x-2">
+                                            <ShieldCheck className="w-4 h-4" />
+                                            <span>Admin</span>
+                                        </Link>
+                                    )}
+                                    <Link href="/dashboard" className="btn-primary flex items-center space-x-2">
+                                        <LayoutDashboard className="w-4 h-4" />
+                                        <span>Dashboard</span>
+                                    </Link>
+                                    <button
+                                        onClick={handleSignOut}
+                                        className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+                                        title="Sign Out"
+                                    >
+                                        <LogOut className="w-5 h-5" />
+                                    </button>
+                                </>
+                            ) : (
+                                <>
+                                    <Link href="/auth/signin" className="btn-secondary">
+                                        Sign In
+                                    </Link>
+                                    <Link href="/auth/signup" className="btn-primary">
+                                        Get Started
+                                    </Link>
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -47,12 +102,21 @@ export default function Home() {
                     </p>
 
                     <div className="flex flex-col sm:flex-row justify-center items-center space-y-4 sm:space-y-0 sm:space-x-4">
-                        <Link href="/auth/signup" className="btn-primary text-lg px-8 py-4 w-full sm:w-auto">
-                            Get Your Badges
-                        </Link>
-                        <Link href="/admin" className="btn-secondary text-lg px-8 py-4 w-full sm:w-auto border-primary-200">
-                            Admin Portal
-                        </Link>
+                        {user ? (
+                            <Link href={isAdmin(user.email) ? "/admin" : "/dashboard"} className="btn-primary text-lg px-8 py-4 w-full sm:w-auto flex items-center justify-center space-x-2">
+                                <span>Go to Your {isAdmin(user.email) ? 'Admin Portal' : 'Dashboard'}</span>
+                                <Award className="w-5 h-5 ml-2" />
+                            </Link>
+                        ) : (
+                            <>
+                                <Link href="/auth/signup" className="btn-primary text-lg px-8 py-4 w-full sm:w-auto">
+                                    Get Your Badges
+                                </Link>
+                                <Link href="/auth/signin?next=/admin" className="btn-secondary text-lg px-8 py-4 w-full sm:w-auto border-primary-200">
+                                    Admin Portal
+                                </Link>
+                            </>
+                        )}
                     </div>
                 </div>
             </section>
@@ -142,8 +206,14 @@ export default function Home() {
                             <span className="text-lg font-semibold">TechNexus Community</span>
                         </div>
                         <div className="flex space-x-6 text-sm text-gray-400">
-                            <Link href="/auth/signin" className="hover:text-white transition-colors">Sign In</Link>
-                            <Link href="/auth/signup" className="hover:text-white transition-colors">Sign Up</Link>
+                            {user ? (
+                                <button onClick={handleSignOut} className="hover:text-white transition-colors">Sign Out</button>
+                            ) : (
+                                <>
+                                    <Link href="/auth/signin" className="hover:text-white transition-colors">Sign In</Link>
+                                    <Link href="/auth/signup" className="hover:text-white transition-colors">Sign Up</Link>
+                                </>
+                            )}
                             <Link href="/admin" className="text-primary-400 hover:text-primary-300 transition-colors font-medium">Admin Portal</Link>
                         </div>
                         <p className="text-gray-500 text-xs mt-4">

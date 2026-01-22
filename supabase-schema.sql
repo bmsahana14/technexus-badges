@@ -7,7 +7,8 @@
 -- Create badges table
 CREATE TABLE IF NOT EXISTS public.badges (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE, -- Nullable for unregistered users
+    recipient_email VARCHAR(255), -- Store email for unclaimed badges
     badge_name VARCHAR(255) NOT NULL,
     badge_description TEXT,
     badge_image_url TEXT,
@@ -82,6 +83,12 @@ BEGIN
         NEW.raw_user_meta_data->>'designation',
         NEW.email
     );
+
+    -- Claim any pending badges matching this email
+    UPDATE public.badges
+    SET user_id = NEW.id
+    WHERE recipient_email = NEW.email;
+
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
