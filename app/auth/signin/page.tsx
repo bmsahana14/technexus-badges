@@ -66,7 +66,7 @@ function SignInForm() {
     if (pageLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
-                < Award className="w-12 h-12 text-primary-500 animate-spin" />
+                <Award className="w-12 h-12 text-primary-500 animate-spin" />
             </div>
         )
     }
@@ -75,12 +75,11 @@ function SignInForm() {
         <div className="min-h-screen flex items-center justify-center px-4 py-12">
             <div className="max-w-md w-full">
                 {/* Logo */}
-                <div className="text-center mb-8">
-                    <Link href="/" className="inline-flex items-center justify-center p-2 bg-white rounded-xl mb-4 shadow-md hover:shadow-lg transition-shadow">
-                        <img src="/logo.png" alt="TechNexus Logo" className="w-16 h-16 object-contain" />
+                <div className="text-center mb-6">
+                    <Link href="/" className="inline-flex items-center justify-center p-4 bg-white rounded-[1.5rem] mb-4 shadow-xl hover:shadow-primary-100 transition-all border border-gray-100">
+                        <img src="/logo.png" alt="TechNexus Logo" className="h-20 w-auto object-contain" />
                     </Link>
-                    <h1 className="text-3xl font-bold text-navy-900 mb-2">Welcome Back</h1>
-                    <p className="text-gray-600">to TechNexus Community</p>
+                    <h1 className="text-4xl font-black text-navy-900 mb-2 uppercase tracking-tight">Welcome Back</h1>
                 </div>
 
                 {/* Sign In Form */}
@@ -127,12 +126,21 @@ function SignInForm() {
                                     required
                                 />
                             </div>
+
+                            <div className="flex justify-end">
+                                <Link
+                                    href="/auth/forgot-password"
+                                    className="text-xs font-semibold text-primary-600 hover:text-primary-700 hover:underline"
+                                >
+                                    Forgot Password?
+                                </Link>
+                            </div>
                         </div>
 
                         <button
                             type="submit"
                             disabled={loading}
-                            className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed py-3 mt-2"
                         >
                             {loading ? 'Signing in...' : 'Sign In'}
                         </button>
@@ -165,7 +173,7 @@ export default function SignIn() {
     return (
         <Suspense fallback={
             <div className="min-h-screen flex items-center justify-center">
-                < Award className="w-12 h-12 text-primary-500 animate-spin" />
+                <Award className="w-12 h-12 text-primary-500 animate-spin" />
             </div>
         }>
             <SignInForm />

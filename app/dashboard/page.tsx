@@ -7,7 +7,7 @@ import Image from 'next/image'
 import { getCurrentUser, signOut, isAdmin } from '@/lib/auth'
 import { supabase, type Badge } from '@/lib/supabase'
 import { Award, LogOut, Calendar, FileText, Loader2, ShieldCheck, User, Settings, X, Save, Linkedin, Share2, Download } from 'lucide-react'
-import { toast } from 'react-hot-toast'
+import { toast, Toaster } from 'react-hot-toast'
 
 export default function Dashboard() {
     const router = useRouter()
@@ -192,41 +192,38 @@ export default function Dashboard() {
     return (
         <div className="min-h-screen">
             {/* Header */}
-            <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
                     <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                            <Link href="/" className="flex items-center space-x-3 group">
-                                <div className="bg-white p-1 rounded-lg">
-                                    <img src="/logo.png" alt="TechNexus Logo" className="w-10 h-10 object-contain" />
+                        <div className="flex items-center min-w-0">
+                            <Link href="/" className="flex items-center space-x-2 group min-w-0">
+                                <div className="bg-white p-1 rounded-lg flex-shrink-0">
+                                    <img src="/logo.png" alt="TechNexus Logo" className="h-10 sm:h-14 w-auto object-contain" />
                                 </div>
-                                <div>
-                                    <h1 className="text-xl font-bold text-navy-800 group-hover:text-primary-600 transition-colors">TechNexus Community</h1>
-                                    <p className="text-sm text-gray-600 truncate max-w-[150px] sm:max-w-[300px]">
+                                <div className="min-w-0 flex items-center">
+                                    <p className="text-[10px] sm:text-xs text-gray-500 truncate max-w-[120px] xs:max-w-[200px] sm:max-w-[300px] ml-2 font-bold">
                                         {user?.first_name
-                                            ? `${user.first_name} ${user.last_name} | ${user.designation}`
+                                            ? `${user.first_name} ${user.last_name}`
                                             : user?.email}
                                     </p>
                                 </div>
                             </Link>
                         </div>
-                        <div className="flex items-center space-x-2 sm:space-x-4">
+                        <div className="flex items-center space-x-1 sm:space-x-4">
                             {user && (
                                 <>
                                     <button
                                         onClick={() => setIsProfileModalOpen(true)}
-                                        className="flex items-center space-x-2 px-3 py-2 text-gray-700 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors text-sm font-medium border border-transparent hover:border-primary-100"
+                                        className="p-2 text-gray-600 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors border border-transparent"
+                                        title="Profile"
                                     >
-                                        <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center overflow-hidden border-2 border-primary-200">
-                                            <User className="w-5 h-5 text-primary-600" />
-                                        </div>
-                                        <span className="hidden sm:inline">Profile</span>
+                                        <User className="w-5 h-5" />
                                     </button>
 
                                     {isAdmin(user.email) && (
                                         <Link
                                             href="/admin"
-                                            className="flex items-center space-x-2 px-3 py-2 bg-primary-50 text-primary-700 hover:bg-primary-100 rounded-lg transition-colors text-sm font-semibold border border-primary-200"
+                                            className="flex items-center space-x-1 px-3 py-2 bg-primary-50 text-primary-700 hover:bg-primary-100 rounded-lg transition-colors text-xs sm:text-sm font-semibold border border-primary-200"
                                         >
                                             <ShieldCheck className="w-4 h-4" />
                                             <span className="hidden sm:inline">Admin Portal</span>
@@ -236,10 +233,10 @@ export default function Dashboard() {
 
                                     <button
                                         onClick={handleSignOut}
-                                        className="flex items-center space-x-2 px-3 py-2 text-gray-700 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors text-sm font-medium"
+                                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                        title="Sign Out"
                                     >
-                                        <LogOut className="w-4 h-4" />
-                                        <span className="hidden sm:inline">Sign Out</span>
+                                        <LogOut className="w-5 h-5" />
                                     </button>
                                 </>
                             )}
@@ -247,6 +244,7 @@ export default function Dashboard() {
                     </div>
                 </div>
             </header>
+            <Toaster position="top-right" />
 
             {/* Profile Edit Modal */}
             {isProfileModalOpen && (
@@ -398,38 +396,40 @@ export default function Dashboard() {
                     ) : (
                         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {badges.map((badge) => (
-                                <div key={badge.id} className="badge-card">
-                                    <div className="aspect-square bg-gradient-to-br from-primary-100 to-primary-50 rounded-lg mb-4 flex items-center justify-center overflow-hidden">
-                                        {badge.badge_image_url ? (
-                                            <Image
-                                                src={badge.badge_image_url}
-                                                alt={badge.badge_name}
-                                                width={200}
-                                                height={200}
-                                                className="object-contain"
-                                            />
-                                        ) : (
-                                            <Award className="w-24 h-24 text-primary-400" />
-                                        )}
-                                    </div>
+                                <div key={badge.id} className="badge-card p-5">
+                                    <Link href={`/dashboard/badge/${badge.id}`} className="block group">
+                                        <div className="aspect-square bg-gradient-to-br from-primary-100 to-primary-50 rounded-lg mb-4 flex items-center justify-center overflow-hidden group-hover:opacity-90 transition-opacity relative">
+                                            {badge.badge_image_url ? (
+                                                <Image
+                                                    src={badge.badge_image_url}
+                                                    alt={badge.badge_name}
+                                                    width={200}
+                                                    height={200}
+                                                    className="object-contain"
+                                                />
+                                            ) : (
+                                                <Award className="w-24 h-24 text-primary-400" />
+                                            )}
+                                        </div>
 
-                                    <h3 className="text-lg font-bold text-navy-900 mb-2">
-                                        {badge.badge_name}
-                                    </h3>
+                                        <h3 className="text-lg font-bold text-navy-900 mb-2 truncate group-hover:text-primary-600 transition-colors">
+                                            {badge.badge_name}
+                                        </h3>
 
-                                    <p className="text-sm text-gray-600 mb-3">
-                                        {badge.badge_description}
-                                    </p>
+                                        <p className="text-sm text-gray-600 mb-3 line-clamp-2 min-h-[40px]">
+                                            {badge.badge_description}
+                                        </p>
+                                    </Link>
 
                                     <div className="border-t border-gray-200 pt-3 mt-3">
                                         <div className="flex items-center justify-between text-sm">
                                             <span className="text-gray-500">Event:</span>
-                                            <span className="font-semibold text-navy-800">{badge.event_name}</span>
+                                            <span className="font-semibold text-navy-800 truncate ml-2">{badge.event_name}</span>
                                         </div>
                                         <div className="flex items-center justify-between text-sm mt-2">
-                                            <span className="text-gray-500">Issued:</span>
-                                            <span className="font-semibold text-navy-800">
-                                                {new Date(badge.issued_date).toLocaleDateString()}
+                                            <span className="text-gray-500">Credential ID:</span>
+                                            <span className="font-mono text-[10px] text-primary-600 uppercase font-bold">
+                                                {badge.credential_id || 'PENDING'}
                                             </span>
                                         </div>
                                     </div>

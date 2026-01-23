@@ -9,7 +9,6 @@ import {
     Award,
     Users,
     BarChart3,
-    Plus,
     LogOut,
     LayoutDashboard,
     Loader2,
@@ -18,7 +17,8 @@ import {
     Trash2,
     ExternalLink,
     RefreshCcw,
-    Mail
+    Mail,
+    FileJson
 } from 'lucide-react'
 import { toast, Toaster } from 'react-hot-toast'
 
@@ -124,9 +124,15 @@ export default function AdminDashboard() {
         if (!confirm(`Are you sure you want to revoke "${name}"? This cannot be undone.`)) return
 
         try {
+            const { data: { session } } = await supabase.auth.getSession()
+            if (!session) throw new Error('No active session')
+
             const res = await fetch('/api/badges/delete', {
                 method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`
+                },
                 body: JSON.stringify({ id })
             })
 
@@ -145,8 +151,11 @@ export default function AdminDashboard() {
     const filteredBadges = badges.filter((badge: any) =>
         badge.badge_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         badge.event_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (badge.credential_id && badge.credential_id.toLowerCase().includes(searchTerm.toLowerCase())) ||
         badge.profiles?.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        badge.profiles?.last_name?.toLowerCase().includes(searchTerm.toLowerCase())
+        badge.profiles?.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        badge.profiles?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        badge.recipient_email?.toLowerCase().includes(searchTerm.toLowerCase())
     )
 
     const handleSignOut = async () => {
@@ -167,36 +176,37 @@ export default function AdminDashboard() {
             <Toaster position="top-right" />
 
             {/* Admin Header */}
-            <header className="bg-navy-900 text-white shadow-lg sticky top-0 z-20">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                        <Link href="/" className="flex items-center space-x-3 group">
-                            <div className="bg-white p-1 rounded-lg">
-                                <img src="/logo.png" alt="TechNexus Logo" className="w-8 h-8 object-contain" />
+            <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
+                    <div className="flex items-center min-w-0">
+                        <Link href="/" className="flex items-center space-x-3 group min-w-0">
+                            <div className="flex-shrink-0">
+                                <img src="/logo.png" alt="TechNexus Logo" className="h-10 sm:h-14 w-auto object-contain" />
                             </div>
-                            <h1 className="text-xl font-bold tracking-tight group-hover:text-primary-400 transition-colors">TechNexus Admin</h1>
+                            <span className="text-xs font-black uppercase tracking-widest bg-navy-900 px-2 py-1 rounded text-white ml-2">Admin Portal</span>
                         </Link>
                     </div>
-                    <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-2 sm:space-x-4">
                         <button
                             onClick={loadData}
-                            className={`p-2 rounded-lg hover:bg-navy-800 transition-colors ${refreshing ? 'animate-spin' : ''}`}
-                            title="Refresh Dashboard"
+                            className={`p-2 rounded-lg text-gray-400 hover:text-primary-600 hover:bg-primary-50 transition-colors ${refreshing ? 'animate-spin text-primary-600' : ''}`}
+                            title="Refresh"
                         >
                             <RefreshCcw className="w-5 h-5" />
                         </button>
                         <Link
                             href="/dashboard"
-                            className="text-sm font-medium text-gray-300 hover:text-white transition-colors"
+                            className="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 transition-colors"
+                            title="User View"
                         >
-                            User View
+                            <LayoutDashboard className="w-5 h-5" />
                         </Link>
                         <button
                             onClick={handleSignOut}
-                            className="flex items-center space-x-2 px-3 py-1.5 bg-navy-800 hover:bg-red-600 rounded-lg transition-all text-sm font-medium border border-navy-700 hover:border-red-500"
+                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Exit"
                         >
-                            <LogOut className="w-4 h-4" />
-                            <span>Exit</span>
+                            <LogOut className="w-5 h-5" />
                         </button>
                     </div>
                 </div>
@@ -211,17 +221,10 @@ export default function AdminDashboard() {
                     <div className="flex flex-col sm:flex-row gap-3">
                         <Link
                             href="/admin/bulk"
-                            className="btn-secondary flex items-center justify-center space-x-2 py-3 px-8 text-primary-600 border-primary-100"
+                            className="btn-primary flex items-center justify-center space-x-2 py-3 px-8 shadow-xl hover:shadow-primary-100"
                         >
                             <Mail className="w-5 h-5" />
-                            <span className="text-lg">Bulk Issue</span>
-                        </Link>
-                        <Link
-                            href="/admin/issue"
-                            className="btn-primary flex items-center justify-center space-x-2 shadow-xl hover:shadow-primary-100 py-3 px-8"
-                        >
-                            <Plus className="w-5 h-5" />
-                            <span className="text-lg">Issue New Badge</span>
+                            <span className="text-lg font-bold">Bulk Issue Badges</span>
                         </Link>
                     </div>
                 </div>
@@ -270,25 +273,30 @@ export default function AdminDashboard() {
                     <div className="p-6 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <h3 className="text-xl font-bold text-navy-900 flex items-center">
                             <BarChart3 className="w-5 h-5 mr-2 text-primary-500" />
-                            Recent Badges
+                            Registry
                         </h3>
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                            <input
-                                type="text"
-                                placeholder="Search badges, recipients or events..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="pl-10 pr-4 py-2 bg-gray-50 border-none rounded-lg text-sm focus:ring-2 focus:ring-primary-200 outline-none w-full md:w-64"
-                            />
+                        <div className="flex items-center space-x-3">
+                            <div className="flex items-center text-sm font-bold text-gray-400 uppercase tracking-widest">
+                                <Search className="w-4 h-4 mr-2" />
+                                Filter:
+                            </div>
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    placeholder="Name, ID, email..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="pl-4 pr-10 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-primary-100 outline-none w-full md:w-64 font-medium"
+                                />
+                            </div>
                         </div>
                     </div>
 
                     <div className="overflow-x-auto">
                         <table className="w-full text-left">
-                            <thead className="bg-gray-50 text-gray-500 text-xs uppercase font-bold tracking-wider">
+                            <thead className="bg-gray-50 text-gray-500 text-[10px] uppercase font-bold tracking-wider">
                                 <tr>
-                                    <th className="px-6 py-4">Badge</th>
+                                    <th className="px-6 py-4">Badge & ID</th>
                                     <th className="px-6 py-4">Recipient</th>
                                     <th className="px-6 py-4">Event</th>
                                     <th className="px-6 py-4">Date</th>
@@ -300,50 +308,48 @@ export default function AdminDashboard() {
                                     <tr key={badge.id} className="hover:bg-gray-50 transition-colors">
                                         <td className="px-6 py-4">
                                             <div className="flex items-center">
-                                                <div className="w-10 h-10 rounded-lg bg-primary-100 flex items-center justify-center mr-3 overflow-hidden">
+                                                <div className="w-10 h-10 rounded-lg bg-primary-100 flex items-center justify-center mr-3 overflow-hidden flex-shrink-0">
                                                     {badge.badge_image_url ? (
                                                         <img src={badge.badge_image_url} alt="" className="w-full h-full object-cover" />
                                                     ) : (
                                                         <Award className="w-5 h-5 text-primary-600" />
                                                     )}
                                                 </div>
-                                                <div>
-                                                    <p className="font-bold text-navy-900">{badge.badge_name}</p>
-                                                    <p className="text-xs text-gray-500 truncate max-w-[150px]">{badge.badge_description}</p>
+                                                <div className="min-w-0">
+                                                    <p className="font-bold text-navy-900 truncate">{badge.badge_name}</p>
+                                                    <p className="font-mono text-[9px] text-primary-600 font-bold uppercase">{badge.credential_id || 'NO-ID'}</p>
                                                 </div>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
                                             {badge.profiles ? (
-                                                <div>
-                                                    <p className="font-semibold text-navy-800">
+                                                <div className="min-w-0">
+                                                    <p className="font-semibold text-navy-800 truncate">
                                                         {badge.profiles.first_name} {badge.profiles.last_name}
                                                     </p>
-                                                    <p className="text-xs text-gray-500">{badge.profiles.designation || 'Member'}</p>
-                                                    <p className="text-[10px] text-gray-400">{badge.profiles.email}</p>
+                                                    <p className="text-[10px] text-gray-400 truncate">{badge.profiles.email}</p>
                                                 </div>
                                             ) : (
-                                                <div>
-                                                    <p className="font-semibold text-gray-500 italic">Unclaimed Badge</p>
-                                                    <p className="text-xs text-primary-600 font-medium">{badge.recipient_email}</p>
-                                                    <p className="text-[10px] bg-primary-50 text-primary-600 w-fit px-1.5 py-0.5 rounded mt-1">Pending Registration</p>
+                                                <div className="min-w-0">
+                                                    <p className="text-xs text-primary-600 font-medium truncate">{badge.recipient_email}</p>
+                                                    <p className="text-[9px] bg-primary-50 text-primary-600 w-fit px-1.5 py-0.5 rounded mt-0.5">Unclaimed</p>
                                                 </div>
                                             )}
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs font-semibold">
+                                            <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-[10px] font-bold uppercase">
                                                 {badge.event_name}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 text-sm text-gray-500">
+                                        <td className="px-6 py-4 text-xs font-medium text-gray-500">
                                             {new Date(badge.created_at).toLocaleDateString()}
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            <div className="flex items-center justify-end space-x-2">
+                                            <div className="flex items-center justify-end space-x-1">
                                                 <button
                                                     onClick={() => handleDeleteBadge(badge.id, badge.badge_name)}
-                                                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                                                    title="Revoke Badge"
+                                                    className="p-2 text-gray-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                                                    title="Revoke"
                                                 >
                                                     <Trash2 className="w-4 h-4" />
                                                 </button>
@@ -351,8 +357,8 @@ export default function AdminDashboard() {
                                                     href={badge.badge_image_url}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    className="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-all"
-                                                    title="View Image"
+                                                    className="p-2 text-gray-300 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-all"
+                                                    title="View"
                                                 >
                                                     <ExternalLink className="w-4 h-4" />
                                                 </a>
@@ -364,10 +370,8 @@ export default function AdminDashboard() {
                                 {filteredBadges.length === 0 && (
                                     <tr>
                                         <td colSpan={5} className="px-6 py-12 text-center">
-                                            <div className="bg-gray-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                                                <Search className="w-8 h-8 text-gray-300" />
-                                            </div>
-                                            <p className="text-gray-500 font-medium">No badges found matching your search</p>
+                                            <Search className="w-10 h-10 text-gray-200 mx-auto mb-3" />
+                                            <p className="text-gray-400 font-medium text-sm">No matching records found</p>
                                         </td>
                                     </tr>
                                 )}
@@ -389,7 +393,7 @@ export default function AdminDashboard() {
                     </div>
                     <div className="card p-6 bg-white border-none shadow-sm flex items-start space-x-4">
                         <div className="bg-green-100 p-3 rounded-xl">
-                            <Plus className="w-6 h-6 text-green-600" />
+                            <FileJson className="w-6 h-6 text-green-600" />
                         </div>
                         <div>
                             <h4 className="font-bold text-navy-900">Bulk Issue Enabled</h4>

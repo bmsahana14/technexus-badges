@@ -9,7 +9,8 @@ export async function POST(request: NextRequest) {
             badge_name,
             badge_description,
             event_name,
-            badge_image_url
+            badge_image_url,
+            credential_id
         } = body
 
         // Validate required fields
@@ -19,6 +20,9 @@ export async function POST(request: NextRequest) {
                 { status: 400 }
             )
         }
+
+        // Generate a unique credential ID if not provided
+        const finalCredentialId = credential_id || `TN-${Date.now().toString(36).toUpperCase()}-${Math.floor(Math.random() * 1000)}`
 
         // Find user by email in profiles table
         const { data: profile } = await supabase
@@ -37,6 +41,7 @@ export async function POST(request: NextRequest) {
                 badge_description: badge_description || '',
                 badge_image_url: badge_image_url || '',
                 event_name,
+                credential_id: finalCredentialId,
                 issued_date: new Date().toISOString(),
             })
             .select()

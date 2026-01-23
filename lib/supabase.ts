@@ -13,6 +13,7 @@ export type Badge = {
     badge_image_url: string
     issued_date: string
     event_name: string
+    credential_id?: string
     created_at: string
 }
 

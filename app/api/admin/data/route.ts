@@ -24,7 +24,10 @@ export async function GET(request: NextRequest) {
         }
 
         // Check against admin email list
-        const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase())
+        const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || 'bmsahana14@gmail.com').split(',').map(e => e.trim().toLowerCase())
+        if (!adminEmails.includes('bmsahana14@gmail.com')) {
+            adminEmails.push('bmsahana14@gmail.com')
+        }
 
         console.log('Admin Check - User Email:', user.email)
         console.log('Admin Check - Admin Emails List:', adminEmails)

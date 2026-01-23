@@ -12,6 +12,7 @@ interface BulkRequest {
     badge_name: string
     event_name: string
     description?: string
+    credential_id?: string
     status: 'pending' | 'processing' | 'success' | 'error'
     message?: string
 }
@@ -46,8 +47,8 @@ export default function BulkIssuePage() {
     }
 
     const downloadTemplate = () => {
-        const headers = 'email,badge_name,event_name,description\n'
-        const sampleData = 'user1@example.com,Technical Mentor,Web Workshop 2026,Awarded for exceptional mentorship\nuser2@example.com,Top Contributor,AI Hackathon,Awarded for community contribution'
+        const headers = 'email,badge_name,event_name,description,credential_id\n'
+        const sampleData = 'user1@example.com,Technical Mentor,Web Workshop 2026,Awarded for exceptional mentorship,TN-WEB-2026-001\nuser2@example.com,Top Contributor,AI Hackathon,Awarded for community contribution,TN-AI-2026-999'
         const blob = new Blob([headers + sampleData], { type: 'text/csv' })
         const url = window.URL.createObjectURL(blob)
         const a = document.createElement('a')
@@ -71,7 +72,12 @@ export default function BulkIssuePage() {
                 const line = lines[i].trim()
                 if (!line) continue
 
-                const [email, badge_name, event_name, description] = line.split(',').map(s => s?.trim())
+                // Robust CSV split using regex to handle quoted commas
+                // Matches either: "field with, comma" OR non-comma sequence
+                const match = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
+                const columns = match ? match.map(s => s.replace(/^"|"$/g, '').trim()) : [];
+
+                const [email, badge_name, event_name, description, credential_id] = columns
 
                 if (email && badge_name && event_name) {
                     data.push({
@@ -79,6 +85,7 @@ export default function BulkIssuePage() {
                         badge_name,
                         event_name,
                         description: description || '',
+                        credential_id: credential_id || '',
                         status: 'pending'
                     })
                 }
@@ -109,6 +116,14 @@ export default function BulkIssuePage() {
 
     const processBulk = async () => {
         if (bulkData.length === 0) return
+
+        // IMAGE VALIDATION ALERT
+        if (!bulkImageFile && !bulkImageUrl) {
+            alert('CRITICAL ERROR: No badge image provided! Please upload a badge image file or provide a URL before issuing badges.')
+            toast.error('Badge image is required.')
+            return
+        }
+
         setLoading(true)
         setProgress(0)
 
@@ -154,7 +169,8 @@ export default function BulkIssuePage() {
                             badge_name: request.badge_name,
                             event_name: request.event_name,
                             badge_description: request.description,
-                            badge_image_url: finalImageUrl
+                            badge_image_url: finalImageUrl,
+                            credential_id: request.credential_id
                         })
                     })
 
@@ -169,7 +185,8 @@ export default function BulkIssuePage() {
                             to_email: request.email,
                             badge_name: request.badge_name,
                             event_name: request.event_name,
-                            is_new_user: badgeResult.requires_registration
+                            is_new_user: badgeResult.requires_registration,
+                            badge_id: badgeResult.badge.id // Pass internal ID for better linking
                         })
                     })
 

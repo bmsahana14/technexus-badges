@@ -124,7 +124,7 @@ function SignUpForm() {
     if (pageLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
-                < Award className="w-12 h-12 text-primary-500 animate-spin" />
+                <Award className="w-12 h-12 text-primary-500 animate-spin" />
             </div>
         )
     }
@@ -133,12 +133,11 @@ function SignUpForm() {
         <div className="min-h-screen flex items-center justify-center px-4 py-12">
             <div className="max-w-md w-full">
                 {/* Logo */}
-                <div className="text-center mb-8">
-                    <Link href="/" className="inline-flex items-center justify-center p-2 bg-white rounded-xl mb-4 shadow-md hover:shadow-lg transition-shadow">
-                        <img src="/logo.png" alt="TechNexus Logo" className="w-16 h-16 object-contain" />
+                <div className="text-center mb-6">
+                    <Link href="/" className="inline-flex items-center justify-center p-4 bg-white rounded-[1.5rem] mb-4 shadow-xl hover:shadow-primary-100 transition-all border border-gray-100">
+                        <img src="/logo.png" alt="TechNexus Logo" className="h-20 w-auto object-contain" />
                     </Link>
-                    <h1 className="text-3xl font-bold text-navy-900 mb-2">Join TechNexus</h1>
-                    <p className="text-gray-600">Start your community journey today</p>
+                    <h1 className="text-4xl font-black text-navy-900 mb-2 uppercase tracking-tight">Join Today</h1>
                 </div>
 
                 {/* Sign Up Form */}
@@ -295,7 +294,7 @@ export default function SignUp() {
     return (
         <Suspense fallback={
             <div className="min-h-screen flex items-center justify-center">
-                < Award className="w-12 h-12 text-primary-500 animate-spin" />
+                <Award className="w-12 h-12 text-primary-500 animate-spin" />
             </div>
         }>
             <SignUpForm />

@@ -8,6 +8,10 @@ export const metadata: Metadata = {
     title: 'TechNexus Community - Secure Digital Badge Management',
     description: 'A professional platform for managing and viewing your digital badges for the TechNexus Community',
     keywords: ['badges', 'digital badges', 'credentials', 'achievements', 'technexus'],
+    icons: {
+        icon: '/logo1.png',
+        apple: '/logo1.png',
+    },
 }
 
 export default function RootLayout({

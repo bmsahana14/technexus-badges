@@ -34,31 +34,31 @@ export default function Home() {
     return (
         <div className="min-h-screen">
             {/* Header */}
-            <header className="bg-white border-b border-gray-200 shadow-sm">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
                     <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                            <Link href="/" className="flex items-center space-x-3 group">
-                                <div className="bg-white p-1 rounded-lg">
-                                    <img src="/logo.png" alt="TechNexus Logo" className="w-10 h-10 object-contain" />
+                        <div className="flex items-center">
+                            <Link href="/" className="flex items-center group">
+                                <div className="bg-white p-1 rounded-lg flex-shrink-0">
+                                    <img src="/logo.png" alt="TechNexus Logo" className="h-12 sm:h-16 w-auto object-contain" />
                                 </div>
-                                <h1 className="text-2xl font-bold text-navy-800 group-hover:text-primary-600 transition-colors">TechNexus Community</h1>
                             </Link>
                         </div>
-                        <div className="flex space-x-4">
+                        <div className="flex items-center space-x-2 sm:space-x-4">
                             {loading ? (
-                                <Loader2 className="w-6 h-6 text-primary-500 animate-spin" />
+                                <Loader2 className="w-5 h-5 text-primary-500 animate-spin" />
                             ) : user ? (
                                 <>
                                     {isAdmin(user.email) && (
-                                        <Link href="/admin" className="btn-secondary flex items-center space-x-2">
+                                        <Link href="/admin" className="px-3 py-2 text-primary-600 hover:bg-primary-50 rounded-lg transition-colors text-sm font-semibold border border-primary-100 flex items-center space-x-1">
                                             <ShieldCheck className="w-4 h-4" />
-                                            <span>Admin</span>
+                                            <span className="hidden sm:inline">Admin</span>
                                         </Link>
                                     )}
-                                    <Link href="/dashboard" className="btn-primary flex items-center space-x-2">
+                                    <Link href="/dashboard" className="btn-primary py-2 px-3 sm:px-4 text-sm flex items-center space-x-2">
                                         <LayoutDashboard className="w-4 h-4" />
-                                        <span>Dashboard</span>
+                                        <span className="hidden sm:inline">Dashboard</span>
+                                        <span className="sm:hidden">App</span>
                                     </Link>
                                     <button
                                         onClick={handleSignOut}
@@ -70,10 +70,10 @@ export default function Home() {
                                 </>
                             ) : (
                                 <>
-                                    <Link href="/auth/signin" className="btn-secondary">
+                                    <Link href="/auth/signin" className="px-3 py-2 text-gray-600 hover:text-primary-600 text-sm font-medium">
                                         Sign In
                                     </Link>
-                                    <Link href="/auth/signup" className="btn-primary">
+                                    <Link href="/auth/signup" className="btn-primary py-2 px-4 text-sm">
                                         Get Started
                                     </Link>
                                 </>
@@ -84,19 +84,19 @@ export default function Home() {
             </header>
 
             {/* Hero Section */}
-            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-20">
                 <div className="text-center">
                     <div className="inline-flex items-center justify-center p-2 bg-primary-100 rounded-full mb-6">
-                        <Shield className="w-6 h-6 text-primary-600 mr-2" />
-                        <span className="text-primary-700 font-semibold text-sm">Secure & Professional</span>
+                        <Shield className="w-5 h-5 sm:w-6 sm:h-6 text-primary-600 mr-2" />
+                        <span className="text-primary-700 font-semibold text-xs sm:text-sm">Secure & Professional</span>
                     </div>
 
-                    <h2 className="text-5xl font-bold text-navy-900 mb-6 leading-tight">
+                    <h2 className="text-3xl sm:text-5xl lg:text-6xl font-black text-navy-900 mb-6 leading-[1.1]">
                         Your Digital Badges,<br />
                         <span className="text-primary-600">Securely Managed</span>
                     </h2>
 
-                    <p className="text-xl text-gray-600 mb-10 max-w-2xl mx-auto">
+                    <p className="text-base sm:text-xl text-gray-600 mb-10 max-w-2xl mx-auto px-4">
                         Access and manage your earned digital badges through our secure, professional platform.
                         Simple, trustworthy, and designed for your success.
                     </p>
