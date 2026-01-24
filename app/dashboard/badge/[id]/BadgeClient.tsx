@@ -146,7 +146,7 @@ export default function BadgeClient({ badge }: { badge: Badge }) {
                             </div>
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center space-x-3">
-                                    <div className="bg-navy-900 p-2 rounded-lg">
+                                    <div className="bg-white border border-gray-100 p-2 rounded-xl shadow-sm">
                                         <img src="/logo.png" alt="TechNexus" className="w-6 h-6 object-contain" />
                                     </div>
                                     <div>
