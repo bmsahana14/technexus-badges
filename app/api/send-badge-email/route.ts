@@ -28,7 +28,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://technexus-badges-live.vercel.app'
+    const host = request.headers.get('host')
+    const protocol = host?.includes('localhost') ? 'http' : 'https'
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || `${protocol}://${host}`
     const badge_id = body.badge_id
     const badgeUrl = badge_id ? `${appUrl}/dashboard/badge/${badge_id}` : `${appUrl}/dashboard`
     const isNewUser = body.is_new_user === true

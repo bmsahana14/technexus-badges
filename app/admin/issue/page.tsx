@@ -110,7 +110,8 @@ export default function IssueBadgePage() {
                     badge_name: form.badge_name,
                     event_name: form.event_name,
                     badge_link: `${window.location.origin}/dashboard`,
-                    is_new_user: data.requires_registration
+                    is_new_user: data.requires_registration,
+                    badge_id: data.badge.id
                 }),
             })
 
