@@ -27,8 +27,9 @@ export default function BadgeClient({ badge }: { badge: Badge }) {
     }
 
     const shareToLinkedIn = () => {
-        const shareUrl = window.location.href
-        const linkedinUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`
+        const badgeUrl = window.location.href
+        const text = `I'm proud to share that I've earned the "${badge.badge_name}" badge from the TechNexus Community! 🚀\n\nView my credential here: ${badgeUrl}`
+        const linkedinUrl = `https://www.linkedin.com/feed/?shareActive=true&text=${encodeURIComponent(text)}`
         window.open(linkedinUrl, '_blank', 'width=600,height=600')
     }
 

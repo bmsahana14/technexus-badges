@@ -67,10 +67,10 @@ export default function Dashboard() {
 
     const shareToLinkedIn = (badge: Badge) => {
         console.log('LinkedIn share triggered for badge:', badge.badge_name)
-        const appUrl = 'https://technexus-badges-live.vercel.app'
-        const text = `I'm proud to share that I've earned the "${badge.badge_name}" badge from the TechNexus Community! 🚀\n\nCheck it out here: ${appUrl}`
+        const appUrl = window.location.origin
+        const badgeUrl = `${appUrl}/dashboard/badge/${badge.id}`
+        const text = `I'm proud to share that I've earned the "${badge.badge_name}" badge from the TechNexus Community! 🚀\n\nView my credential here: ${badgeUrl}`
 
-        // Share Intent works best for pre-filled text on desktop/mobile
         const shareUrl = `https://www.linkedin.com/feed/?shareActive=true&text=${encodeURIComponent(text)}`
 
         const popup = window.open(shareUrl, '_blank', 'width=600,height=600')
