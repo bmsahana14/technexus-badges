@@ -166,16 +166,19 @@ export default function BadgeClient({ badge }: { badge: Badge }) {
                                         className="flex items-center space-x-2 py-4 px-8 bg-[#0077B5] text-white rounded-2xl hover:bg-[#005c8d] transition-all font-bold shadow-xl shadow-blue-100 flex-1 justify-center active:scale-95"
                                     >
                                         <Linkedin className="w-5 h-5" />
-                                        <span>Post Link</span>
+                                        <span>Post to Feed</span>
                                     </button>
                                     <button
                                         onClick={copyToClipboard}
                                         className="flex items-center space-x-2 py-4 px-8 bg-white text-gray-700 border-2 border-gray-100 rounded-2xl hover:bg-gray-50 transition-all font-bold flex-1 justify-center active:scale-95"
                                     >
                                         <Share2 className="w-5 h-5" />
-                                        <span>Copy Link</span>
+                                        <span>Copy Direct Link</span>
                                     </button>
                                 </div>
+                                <p className="text-[10px] text-gray-400 text-center italic">
+                                    Note: LinkedIn previews may take a few minutes to update after issuance.
+                                </p>
                             </div>
                         </div>
                     </div>

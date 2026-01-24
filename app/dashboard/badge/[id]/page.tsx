@@ -1,11 +1,17 @@
-import { supabase } from '@/lib/supabase'
+import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 import BadgeClient from './BadgeClient'
 import { Metadata } from 'next'
+import { headers } from 'next/headers'
 
 // Generate dynamic metadata for LinkedIn previews
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
     const { id } = await params
+    const headersList = await headers()
+    const host = headersList.get('host') || 'technexus-badges.vercel.app'
+    const protocol = host.includes('localhost') ? 'http' : 'https'
+    const baseUrl = `${protocol}://${host}`
 
+    // Use admin client to bypass RLS for scraping
     const { data: badge } = await supabase
         .from('badges')
         .select('*')
@@ -20,7 +26,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
         openGraph: {
             title: `${badge.badge_name} | TechNexus Community`,
             description: badge.badge_description,
-            url: `https://technexus-badges-live.vercel.app/dashboard/badge/${id}`,
+            url: `${baseUrl}/dashboard/badge/${id}`,
             images: [
                 {
                     url: badge.badge_image_url,
@@ -43,7 +49,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
 export default async function BadgeDetailsPage({ params }: { params: { id: string } }) {
     const { id } = await params
 
-    // Fetch badge data on the server
+    // Fetch badge data using admin client so public can verify tokens via direct link
     const { data: badge } = await supabase
         .from('badges')
         .select('*')

@@ -149,66 +149,63 @@ export default function BulkIssuePage() {
                 finalImageUrl = publicUrl
             }
 
-            // 2. Process each recipient
-            for (let i = 0; i < bulkData.length; i++) {
-                const request = bulkData[i]
+            // 2. Process recipients in chunks (batch size 20 for maximum speed)
+            const CHUNK_SIZE = 20
+            for (let i = 0; i < bulkData.length; i += CHUNK_SIZE) {
+                const chunk = bulkData.slice(i, i + CHUNK_SIZE)
 
-                setBulkData(prev => {
-                    const newData = [...prev]
-                    newData[i].status = 'processing'
-                    return newData
-                })
+                await Promise.all(chunk.map(async (request, index) => {
+                    const actualIdx = i + index
 
-                try {
-                    // Create badge in DB
-                    const badgeRes = await fetch('/api/badges', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            user_email: request.email,
-                            badge_name: request.badge_name,
-                            event_name: request.event_name,
-                            badge_description: request.description,
-                            badge_image_url: finalImageUrl,
-                            credential_id: request.credential_id
+                    try {
+                        const badgeRes = await fetch('/api/badges', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                user_email: request.email,
+                                badge_name: request.badge_name,
+                                event_name: request.event_name,
+                                badge_description: request.description,
+                                badge_image_url: finalImageUrl,
+                                credential_id: request.credential_id
+                            })
                         })
-                    })
 
-                    const badgeResult = await badgeRes.json()
-                    if (!badgeRes.ok) throw new Error(badgeResult.message || badgeResult.error)
+                        const badgeResult = await badgeRes.json()
+                        if (!badgeRes.ok) throw new Error(badgeResult.message || badgeResult.error)
 
-                    // Send email
-                    await fetch('/api/send-badge-email', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            to_email: request.email,
-                            badge_name: request.badge_name,
-                            event_name: request.event_name,
-                            is_new_user: badgeResult.requires_registration,
-                            badge_id: badgeResult.badge.id // Pass internal ID for better linking
+                        await fetch('/api/send-badge-email', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                to_email: request.email,
+                                badge_name: request.badge_name,
+                                event_name: request.event_name,
+                                is_new_user: badgeResult.requires_registration,
+                                badge_id: badgeResult.badge.id
+                            })
                         })
-                    })
 
-                    setBulkData(prev => {
-                        const newData = [...prev]
-                        newData[i].status = 'success'
-                        if (badgeResult.requires_registration) {
-                            newData[i].message = 'Pending Registration'
-                        }
-                        return newData
-                    })
+                        setBulkData(prev => {
+                            const newData = [...prev]
+                            newData[actualIdx].status = 'success'
+                            if (badgeResult.requires_registration) {
+                                newData[actualIdx].message = 'Pending Registration'
+                            }
+                            return newData
+                        })
 
-                } catch (err: any) {
-                    setBulkData(prev => {
-                        const newData = [...prev]
-                        newData[i].status = 'error'
-                        newData[i].message = err.message
-                        return newData
-                    })
-                }
+                    } catch (err: any) {
+                        setBulkData(prev => {
+                            const newData = [...prev]
+                            newData[actualIdx].status = 'error'
+                            newData[actualIdx].message = err.message
+                            return newData
+                        })
+                    }
+                }))
 
-                setProgress(Math.round(((i + 1) / bulkData.length) * 100))
+                setProgress(Math.round((Math.min(i + CHUNK_SIZE, bulkData.length) / bulkData.length) * 100))
             }
         } catch (err: any) {
             toast.error(err.message)
@@ -351,11 +348,21 @@ export default function BulkIssuePage() {
                             </div>
                         </div>
 
+                        {loading && (
+                            <div className="bg-primary-50 px-6 py-2 border-b border-primary-100 flex items-center justify-between">
+                                <div className="flex items-center space-x-2">
+                                    <span className="flex h-2 w-2 rounded-full bg-primary-600 animate-ping"></span>
+                                    <span className="text-[10px] font-black text-primary-700 uppercase tracking-widest leading-none">Running High-Speed Batch (x20)</span>
+                                </div>
+                                <span className="text-[10px] font-bold text-primary-600">{progress}% Complete</span>
+                            </div>
+                        )}
+
                         {/* Progress Bar */}
                         {loading && (
-                            <div className="h-2 w-full bg-gray-100">
+                            <div className="h-1.5 w-full bg-gray-100 overflow-hidden">
                                 <div
-                                    className="h-full bg-primary-600 transition-all duration-300"
+                                    className="h-full bg-primary-600 transition-all duration-500 ease-out"
                                     style={{ width: `${progress}%` }}
                                 />
                             </div>

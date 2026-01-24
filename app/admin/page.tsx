@@ -40,7 +40,7 @@ export default function AdminDashboard() {
 
     const checkAuth = async () => {
         try {
-            // Check session first (fast)
+            // Get session & user in one go
             const { data: { session } } = await supabase.auth.getSession()
             const user = session?.user
 
@@ -49,24 +49,31 @@ export default function AdminDashboard() {
                 return
             }
 
+            // Quick check
             if (!isAdmin(user.email)) {
                 toast.error('Access denied. Administrator privileges required.')
                 router.push('/dashboard')
                 return
             }
 
-            // Secure double-check
-            const secureUser = await getCurrentUser()
-            if (!secureUser || !isAdmin(secureUser.email)) {
-                router.push('/dashboard')
-                return
-            }
+            // Parallelize secure check and data loading
+            await Promise.all([
+                getCurrentUser().then(secureUser => {
+                    if (!secureUser || !isAdmin(secureUser.email)) {
+                        router.push('/dashboard')
+                        throw new Error('Unauthorized')
+                    }
+                }),
+                loadData()
+            ])
 
-            await loadData()
             setLoading(false)
         } catch (error) {
             console.error('Admin Auth Check - EXCEPTION:', error)
-            router.push('/auth/signin')
+            // If it's not the 'Unauthorized' we threw, push to signin
+            if (error instanceof Error && error.message !== 'Unauthorized') {
+                router.push('/auth/signin')
+            }
         }
     }
 
@@ -123,6 +130,10 @@ export default function AdminDashboard() {
     const handleDeleteBadge = async (id: string, name: string) => {
         if (!confirm(`Are you sure you want to revoke "${name}"? This cannot be undone.`)) return
 
+        // Optimistic UI could go here, but since it's a critical action, 
+        // we'll just show a loading toast if it was very slow.
+        const loadingToast = toast.loading(`Revoking "${name}"...`)
+
         try {
             const { data: { session } } = await supabase.auth.getSession()
             if (!session) throw new Error('No active session')
@@ -141,10 +152,10 @@ export default function AdminDashboard() {
                 throw new Error(data.error || 'Failed to delete badge')
             }
 
-            toast.success('Badge revoked successfully')
+            toast.success('Badge revoked successfully', { id: loadingToast })
             loadData() // Reload list
         } catch (error: any) {
-            toast.error(error.message)
+            toast.error(error.message, { id: loadingToast })
         }
     }
 
@@ -189,21 +200,21 @@ export default function AdminDashboard() {
                     <div className="flex items-center space-x-2 sm:space-x-4">
                         <button
                             onClick={loadData}
-                            className={`p-2 rounded-lg text-gray-400 hover:text-primary-600 hover:bg-primary-50 transition-colors ${refreshing ? 'animate-spin text-primary-600' : ''}`}
+                            className={`p-2 rounded-lg text-gray-400 hover:text-primary-600 hover:bg-primary-50 active:scale-95 active:bg-primary-100 transition-all ${refreshing ? 'animate-spin text-primary-600' : ''}`}
                             title="Refresh"
                         >
                             <RefreshCcw className="w-5 h-5" />
                         </button>
                         <Link
                             href="/dashboard"
-                            className="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 transition-colors"
+                            className="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 active:scale-95 active:bg-primary-100 transition-all"
                             title="User View"
                         >
                             <LayoutDashboard className="w-5 h-5" />
                         </Link>
                         <button
                             onClick={handleSignOut}
-                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 active:scale-95 active:bg-red-100 rounded-lg transition-all"
                             title="Exit"
                         >
                             <LogOut className="w-5 h-5" />
@@ -348,8 +359,9 @@ export default function AdminDashboard() {
                                             <div className="flex items-center justify-end space-x-1">
                                                 <button
                                                     onClick={() => handleDeleteBadge(badge.id, badge.badge_name)}
-                                                    className="p-2 text-gray-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                                                    className="p-2 text-gray-300 hover:text-red-600 hover:bg-red-50 active:scale-90 rounded-lg transition-all disabled:opacity-50"
                                                     title="Revoke"
+                                                    disabled={refreshing}
                                                 >
                                                     <Trash2 className="w-4 h-4" />
                                                 </button>
@@ -357,7 +369,7 @@ export default function AdminDashboard() {
                                                     href={badge.badge_image_url}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    className="p-2 text-gray-300 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-all"
+                                                    className="p-2 text-gray-300 hover:text-primary-600 hover:bg-primary-50 active:scale-90 rounded-lg transition-all"
                                                     title="View"
                                                 >
                                                     <ExternalLink className="w-4 h-4" />
