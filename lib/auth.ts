@@ -57,10 +57,13 @@ export function isAdmin(email: string | undefined) {
     const adminEmails = process.env.NEXT_PUBLIC_ADMIN_EMAILS || 'bmsahana14@gmail.com'
     const adminList = adminEmails.split(',').map(e => e.trim().toLowerCase())
 
-    // Always include your main email as a fallback
-    if (!adminList.includes('bmsahana14@gmail.com')) {
-        adminList.push('bmsahana14@gmail.com')
-    }
+    // Include main admin emails as fallbacks
+    const fallbacks = ['bmsahana14@gmail.com', 'mrazee3814@gmail.com']
+    fallbacks.forEach(email => {
+        if (!adminList.includes(email)) {
+            adminList.push(email)
+        }
+    })
 
     return adminList.includes(email.toLowerCase())
 }

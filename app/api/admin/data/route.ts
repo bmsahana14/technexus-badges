@@ -26,10 +26,15 @@ export async function GET(request: NextRequest) {
         }
 
         // Check against admin email list
-        const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || 'bmsahana14@gmail.com').split(',').map(e => e.trim().toLowerCase())
-        if (!adminEmails.includes('bmsahana14@gmail.com')) {
-            adminEmails.push('bmsahana14@gmail.com')
-        }
+        const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase())
+
+        // Include main admin emails as fallbacks
+        const fallbacks = ['bmsahana14@gmail.com', 'mrazee3814@gmail.com']
+        fallbacks.forEach(email => {
+            if (!adminEmails.includes(email)) {
+                adminEmails.push(email)
+            }
+        })
 
         console.log('Admin Check - User Email:', user.email)
         console.log('Admin Check - Admin Emails List:', adminEmails)
