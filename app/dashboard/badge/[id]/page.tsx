@@ -14,17 +14,21 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
     // Use admin client to bypass RLS for scraping
     const { data: badge } = await supabase
         .from('badges')
-        .select('*')
+        .select('*, profiles(first_name, last_name)')
         .eq('id', id)
         .single()
 
     if (!badge) return { title: 'Badge Not Found | TechNexus' }
 
+    const userName = badge.profiles
+        ? `${badge.profiles.first_name || ''} ${badge.profiles.last_name || ''}`.trim()
+        : (badge.recipient_email ? badge.recipient_email.split('@')[0] : 'Member');
+
     return {
         title: `${badge.badge_name} | TechNexus Community Credential`,
-        description: `This credential was issued to a member of the TechNexus Community for achieving ${badge.badge_name}.`,
+        description: `This credential was issued to ${userName} by TechNexus Community for achieving ${badge.badge_name}.`,
         openGraph: {
-            title: `${badge.badge_name} - TechNexus Community`,
+            title: `${badge.badge_name} - ${userName}`,
             description: badge.badge_description || `Official digital badge from TechNexus Community`,
             url: `${baseUrl}/dashboard/badge/${id}`,
             siteName: 'TechNexus Community',
@@ -53,7 +57,7 @@ export default async function BadgeDetailsPage({ params }: { params: { id: strin
     // Fetch badge data using admin client so public can verify tokens via direct link
     const { data: badge } = await supabase
         .from('badges')
-        .select('*')
+        .select('*, profiles(first_name, last_name)')
         .eq('id', id)
         .single()
 

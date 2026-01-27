@@ -7,7 +7,11 @@ import { Award, Calendar, Shield, Share2, Download, Linkedin, ArrowLeft, CheckCi
 import { toast, Toaster } from 'react-hot-toast'
 import type { Badge } from '@/lib/supabase'
 
-export default function BadgeClient({ badge }: { badge: Badge }) {
+export default function BadgeClient({ badge }: { badge: any }) {
+    const userName = badge.profiles
+        ? `${badge.profiles.first_name || ''} ${badge.profiles.last_name || ''}`.trim()
+        : (badge.recipient_email ? badge.recipient_email.split('@')[0] : 'Member');
+
     const handleDownload = async () => {
         try {
             const response = await fetch(badge.badge_image_url, { mode: 'cors' })
@@ -69,7 +73,9 @@ export default function BadgeClient({ badge }: { badge: Badge }) {
 
             <main className="max-w-5xl mx-auto px-4 pt-10">
                 <div className="text-center mb-8">
-                    <p className="text-primary-600 font-black uppercase tracking-[0.2em] text-sm mb-2">Member's Achievement</p>
+                    <p className="text-primary-600 font-black uppercase tracking-[0.2em] text-sm mb-2">
+                        {userName}'s Achievement
+                    </p>
                     <div className="h-1 w-20 bg-primary-600 mx-auto rounded-full"></div>
                 </div>
 
