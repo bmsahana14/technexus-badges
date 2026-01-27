@@ -76,7 +76,7 @@ function SignUpForm() {
             // If not, it means they need to confirm their email
             if (data?.session) {
                 setTimeout(() => {
-                    const user = data.session.user;
+                    const user = data.session?.user;
                     if (nextPath) {
                         router.push(nextPath)
                     } else if (isAdmin(user?.email)) {
