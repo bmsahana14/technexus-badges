@@ -93,14 +93,19 @@ export default function Dashboard() {
     const [isSavingProfile, setIsSavingProfile] = useState(false)
 
     useEffect(() => {
-        checkUser()
+        const initialize = async () => {
+            // Give a small delay for Supabase to recover session from storage on mobile
+            await new Promise(r => setTimeout(r, 500))
+            await checkUser()
+        }
+        initialize()
     }, [])
 
     const checkUser = async () => {
         try {
             const currentUser = await getCurrentUser()
             if (!currentUser) {
-                router.push('/auth/signin')
+                router.replace('/auth/signin?next=/dashboard')
                 return
             }
 
@@ -113,7 +118,6 @@ export default function Dashboard() {
 
             // FALLBACK: If profile doesn't exist (trigger failed), create it now
             if (!profile || profileError) {
-                console.log('Profile missing, creating fallback profile...')
                 const { data: newProfile, error: createError } = await supabase
                     .from('profiles')
                     .upsert({
@@ -140,7 +144,8 @@ export default function Dashboard() {
             })
             await fetchBadges(currentUser.id)
         } catch (err) {
-            router.push('/auth/signin')
+            console.error('Check user error:', err)
+            router.replace('/auth/signin')
         } finally {
             setLoading(false)
         }

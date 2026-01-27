@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { Shield, Award, Lock, CheckCircle, ShieldCheck, LayoutDashboard, Loader2, LogOut } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { getCurrentUser, isAdmin, signOut } from '@/lib/auth'
+import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 
 export default function Home() {
@@ -12,13 +13,18 @@ export default function Home() {
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
-        checkUser()
+        const initialize = async () => {
+            // Give a small delay for Supabase to recover session from storage on mobile
+            await new Promise(r => setTimeout(r, 500))
+            await checkUser()
+        }
+        initialize()
     }, [])
 
     const checkUser = async () => {
         try {
-            const currentUser = await getCurrentUser()
-            setUser(currentUser)
+            const { data: { session } } = await supabase.auth.getSession()
+            setUser(session?.user || null)
         } catch (err) {
             // Not logged in
         } finally {

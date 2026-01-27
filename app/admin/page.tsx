@@ -49,7 +49,10 @@ export default function AdminDashboard() {
 
     useEffect(() => {
         const initialize = async () => {
+            // Give a small delay for Supabase to recover session from storage on mobile
+            await new Promise(r => setTimeout(r, 500))
             await checkAuth()
+
             // Load hidden badges from localStorage
             const savedHidden = localStorage.getItem('technexus_hidden_badges')
             if (savedHidden) {
@@ -81,36 +84,39 @@ export default function AdminDashboard() {
 
     const checkAuth = async () => {
         try {
-            const { data: { session } } = await supabase.auth.getSession()
-            const user = session?.user
+            // First check for session (faster)
+            const { data: { session }, error: sessionError } = await supabase.auth.getSession()
 
+            if (sessionError) throw sessionError;
+
+            const user = session?.user
             if (!user) {
-                router.push('/auth/signin?next=/admin')
+                console.log('No session found, redirecting to signin...')
+                router.replace('/auth/signin?next=/admin')
                 return
             }
 
             if (!isAdmin(user.email)) {
-                toast.error('Access denied. Administrator privileges required.')
-                router.push('/dashboard')
+                console.log('User is not admin, redirecting to dashboard...')
+                toast.error('Admin access required.')
+                router.replace('/dashboard')
                 return
             }
 
-            await Promise.all([
-                getCurrentUser().then(secureUser => {
-                    if (!secureUser || !isAdmin(secureUser.email)) {
-                        router.push('/dashboard')
-                        throw new Error('Unauthorized')
-                    }
-                }),
-                loadData()
-            ])
+            // session found and email is admin, proceed with secure check
+            const secureUser = await getCurrentUser().catch(() => null)
 
-            setLoading(false)
-        } catch (error) {
-            console.error('Admin Auth Check - EXCEPTION:', error)
-            if (error instanceof Error && error.message !== 'Unauthorized') {
-                router.push('/auth/signin')
+            if (!secureUser || !isAdmin(secureUser.email)) {
+                router.replace('/dashboard')
+                return
             }
+
+            await loadData()
+            setLoading(false)
+        } catch (error: any) {
+            console.error('Admin Auth Check - EXCEPTION:', error)
+            toast.error('Session error. Please sign in.')
+            router.replace('/auth/signin')
         }
     }
 
