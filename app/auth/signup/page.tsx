@@ -64,7 +64,8 @@ function SignUpForm() {
         }
 
         try {
-            const data = await signUp(email, password, {
+            const normalizedEmail = email.trim().toLowerCase()
+            const data = await signUp(normalizedEmail, password, {
                 first_name: firstName,
                 last_name: lastName,
                 designation: designation
@@ -75,9 +76,10 @@ function SignUpForm() {
             // If not, it means they need to confirm their email
             if (data?.session) {
                 setTimeout(() => {
+                    const user = data.session.user;
                     if (nextPath) {
                         router.push(nextPath)
-                    } else if (isAdmin(email)) {
+                    } else if (isAdmin(user?.email)) {
                         router.push('/admin')
                     } else {
                         router.push('/dashboard')
@@ -87,6 +89,7 @@ function SignUpForm() {
                 setNeedsConfirmation(true)
             }
         } catch (err: any) {
+            console.error('Sign Up Error:', err)
             setError(err.message || 'Failed to create account. Please try again.')
         } finally {
             setLoading(false)
@@ -165,6 +168,7 @@ function SignUpForm() {
                                         className="input-field pl-10"
                                         placeholder="John"
                                         required
+                                        autoComplete="given-name"
                                     />
                                 </div>
                             </div>
@@ -182,6 +186,7 @@ function SignUpForm() {
                                         className="input-field pl-10"
                                         placeholder="Doe"
                                         required
+                                        autoComplete="family-name"
                                     />
                                 </div>
                             </div>
@@ -201,6 +206,7 @@ function SignUpForm() {
                                     className="input-field pl-10"
                                     placeholder="Software Engineer"
                                     required
+                                    autoComplete="organization-title"
                                 />
                             </div>
                         </div>
@@ -219,6 +225,10 @@ function SignUpForm() {
                                     className="input-field pl-10"
                                     placeholder="you@example.com"
                                     required
+                                    autoCapitalize="none"
+                                    autoCorrect="off"
+                                    spellCheck="false"
+                                    autoComplete="email"
                                 />
                             </div>
                         </div>
@@ -238,6 +248,7 @@ function SignUpForm() {
                                     placeholder="••••••••"
                                     required
                                     minLength={6}
+                                    autoComplete="new-password"
                                 />
                             </div>
                             <p className="text-xs text-gray-500 mt-1">Must be at least 6 characters</p>
@@ -257,6 +268,7 @@ function SignUpForm() {
                                     className="input-field pl-10"
                                     placeholder="••••••••"
                                     required
+                                    autoComplete="new-password"
                                 />
                             </div>
                         </div>
@@ -264,9 +276,14 @@ function SignUpForm() {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed py-3 mt-4"
+                            className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed py-4 mt-4 select-none active:scale-[0.98] transition-transform font-bold"
                         >
-                            {loading ? 'Creating Account...' : 'Create Account'}
+                            {loading ? (
+                                <div className="flex items-center justify-center space-x-2">
+                                    <Award className="w-6 h-6 animate-spin" />
+                                    <span>Creating Account...</span>
+                                </div>
+                            ) : 'Create Account'}
                         </button>
                     </form>
 

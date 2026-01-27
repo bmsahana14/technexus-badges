@@ -135,9 +135,14 @@ export default function UpdatePassword() {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="btn-primary w-full h-14 disabled:opacity-50 disabled:cursor-not-allowed text-lg font-bold shadow-xl shadow-primary-200"
+                            className="btn-primary w-full h-14 disabled:opacity-50 disabled:cursor-not-allowed text-lg font-bold shadow-xl shadow-primary-200 select-none active:scale-[0.98] transition-transform"
                         >
-                            {loading ? 'Updating...' : 'Update Password'}
+                            {loading ? (
+                                <div className="flex items-center justify-center space-x-2">
+                                    <Award className="w-6 h-6 animate-spin" />
+                                    <span>Updating...</span>
+                                </div>
+                            ) : 'Update Password'}
                         </button>
                     </form>
                 </div>

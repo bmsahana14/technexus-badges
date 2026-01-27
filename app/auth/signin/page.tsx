@@ -25,7 +25,9 @@ function SignInForm() {
         try {
             const user = await getCurrentUser()
             if (user) {
-                if (isAdmin(user.email)) {
+                if (nextPath) {
+                    router.push(nextPath)
+                } else if (isAdmin(user.email)) {
                     router.push('/admin')
                 } else {
                     router.push('/dashboard')
@@ -45,18 +47,20 @@ function SignInForm() {
         setLoading(true)
 
         try {
-            const trimmedEmail = email.trim()
-            await signIn(trimmedEmail, password)
+            const normalizedEmail = email.trim().toLowerCase()
+            const data = await signIn(normalizedEmail, password)
+            const user = data.user
 
             // Check if user is admin and redirect accordingly
             if (nextPath) {
                 router.push(nextPath)
-            } else if (isAdmin(trimmedEmail)) {
+            } else if (isAdmin(user?.email)) {
                 router.push('/admin')
             } else {
                 router.push('/dashboard')
             }
         } catch (err: any) {
+            console.error('Sign In Error:', err)
             setError(err.message || 'Failed to sign in. Please check your credentials.')
         } finally {
             setLoading(false)
@@ -106,6 +110,10 @@ function SignInForm() {
                                     className="input-field pl-11"
                                     placeholder="you@example.com"
                                     required
+                                    autoCapitalize="none"
+                                    autoCorrect="off"
+                                    spellCheck="false"
+                                    autoComplete="email"
                                 />
                             </div>
                         </div>
@@ -124,6 +132,7 @@ function SignInForm() {
                                     className="input-field pl-11"
                                     placeholder="••••••••"
                                     required
+                                    autoComplete="current-password"
                                 />
                             </div>
 
@@ -140,9 +149,14 @@ function SignInForm() {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed py-3 mt-2"
+                            className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed py-4 mt-2 select-none active:scale-[0.98] transition-transform"
                         >
-                            {loading ? 'Signing in...' : 'Sign In'}
+                            {loading ? (
+                                <div className="flex items-center space-x-2">
+                                    <Award className="w-5 h-5 animate-spin" />
+                                    <span>Signing in...</span>
+                                </div>
+                            ) : 'Sign In'}
                         </button>
                     </form>
 
