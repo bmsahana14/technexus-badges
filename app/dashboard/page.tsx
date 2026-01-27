@@ -67,17 +67,19 @@ export default function Dashboard() {
 
     const shareToLinkedIn = (badge: Badge) => {
         console.log('LinkedIn share triggered for badge:', badge.badge_name)
-        const appUrl = window.location.origin
+        // Use the deployed app URL for sharing, fallback to window.location.origin
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin
         const badgeUrl = `${appUrl}/dashboard/badge/${badge.id}`
-        const text = `I'm proud to share that I've earned the "${badge.badge_name}" badge from the TechNexus Community! 🚀\n\nView my credential here: ${badgeUrl}`
+        const text = `I'm proud to share that I've earned the "${badge.badge_name}" digital badge from the TechNexus Community! 🚀\n\nView my verified credential here: ${badgeUrl}`
 
-        const shareUrl = `https://www.linkedin.com/feed/?shareActive=true&text=${encodeURIComponent(text)}`
+        // Use the sharing endpoint which is more reliable for previews
+        const shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(badgeUrl)}`
 
         const popup = window.open(shareUrl, '_blank', 'width=600,height=600')
         if (!popup) {
             toast.error('Pop-up blocked! Please allow pop-ups to share on LinkedIn.')
         } else {
-            toast.success('Redirecting to LinkedIn Feed...')
+            toast.success('Opening LinkedIn Share dialog...')
         }
     }
 
@@ -103,11 +105,32 @@ export default function Dashboard() {
             }
 
             // Get profile data
-            const { data: profile } = await supabase
+            let { data: profile, error: profileError } = await supabase
                 .from('profiles')
                 .select('*')
                 .eq('id', currentUser.id)
                 .single()
+
+            // FALLBACK: If profile doesn't exist (trigger failed), create it now
+            if (!profile || profileError) {
+                console.log('Profile missing, creating fallback profile...')
+                const { data: newProfile, error: createError } = await supabase
+                    .from('profiles')
+                    .upsert({
+                        id: currentUser.id,
+                        first_name: currentUser.user_metadata?.first_name || '',
+                        last_name: currentUser.user_metadata?.last_name || '',
+                        designation: currentUser.user_metadata?.designation || '',
+                        email: currentUser.email,
+                        updated_at: new Date().toISOString()
+                    })
+                    .select()
+                    .single()
+
+                if (!createError) {
+                    profile = newProfile
+                }
+            }
 
             setUser({ ...currentUser, ...profile })
             setProfileForm({
@@ -214,7 +237,7 @@ export default function Dashboard() {
                                 <>
                                     <button
                                         onClick={() => setIsProfileModalOpen(true)}
-                                        className="p-2 text-gray-600 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors border border-transparent"
+                                        className="p-3 sm:p-2 text-gray-600 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors border border-transparent select-none active:scale-95"
                                         title="Profile"
                                     >
                                         <User className="w-5 h-5" />
@@ -223,7 +246,7 @@ export default function Dashboard() {
                                     {isAdmin(user.email) && (
                                         <Link
                                             href="/admin"
-                                            className="flex items-center space-x-1 px-3 py-2 bg-primary-50 text-primary-700 hover:bg-primary-100 rounded-lg transition-colors text-xs sm:text-sm font-semibold border border-primary-200"
+                                            className="flex items-center space-x-1 px-3 py-2 bg-primary-50 text-primary-700 hover:bg-primary-100 rounded-lg transition-colors text-xs sm:text-sm font-semibold border border-primary-200 select-none active:scale-95"
                                         >
                                             <ShieldCheck className="w-4 h-4" />
                                             <span className="hidden sm:inline">Admin Portal</span>
@@ -233,7 +256,7 @@ export default function Dashboard() {
 
                                     <button
                                         onClick={handleSignOut}
-                                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                        className="p-3 sm:p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors select-none active:scale-95"
                                         title="Sign Out"
                                     >
                                         <LogOut className="w-5 h-5" />

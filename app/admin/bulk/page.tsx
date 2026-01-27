@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { toast, Toaster } from 'react-hot-toast'
 import { getCurrentUser, isAdmin } from '@/lib/auth'
-import { Award, Loader2, Send, Mail, Briefcase, Upload, X, Download, FileJson, CheckCircle2, AlertCircle } from 'lucide-react'
+import { Award, Loader2, Send, Mail, Briefcase, Upload, X, Download, FileJson, CheckCircle2, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react'
 
 interface BulkRequest {
     email: string
@@ -23,6 +23,10 @@ export default function BulkIssuePage() {
     const [pageLoading, setPageLoading] = useState(true)
     const [bulkData, setBulkData] = useState<BulkRequest[]>([])
     const [progress, setProgress] = useState(0)
+
+    // Pagination for Bulk Preview
+    const [currentPage, setCurrentPage] = useState(1)
+    const itemsPerPage = 10
 
     // Image state for bulk
     const [bulkImageFile, setBulkImageFile] = useState<File | null>(null)
@@ -312,6 +316,21 @@ export default function BulkIssuePage() {
                     </div>
                 </div>
 
+                {/* Data Calculations */}
+                {bulkData.length > 0 && (
+                    <>
+                        {/* Pagination Logic */}
+                        {(() => {
+                            const totalPages = Math.ceil(bulkData.length / itemsPerPage)
+                            const paginatedData = bulkData.slice(
+                                (currentPage - 1) * itemsPerPage,
+                                currentPage * itemsPerPage
+                            )
+                            return null; // Logic only, render below
+                        })()}
+                    </>
+                )}
+
                 {/* Data Preview & Action */}
                 {bulkData.length > 0 ? (
                     <div className="card bg-white shadow-xl overflow-hidden border-none animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -368,18 +387,18 @@ export default function BulkIssuePage() {
                             </div>
                         )}
 
-                        <div className="overflow-x-auto max-h-[400px]">
-                            <table className="w-full text-left">
-                                <thead className="bg-gray-50 text-gray-400 text-[10px] uppercase font-bold tracking-wider sticky top-0">
+                        <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
+                            <table className="w-full text-left border-collapse">
+                                <thead className="bg-gray-50 text-gray-400 text-[10px] uppercase font-bold tracking-wider sticky top-0 z-10 shadow-sm">
                                     <tr>
-                                        <th className="px-6 py-3">Recipient Email</th>
-                                        <th className="px-6 py-3">Badge Details</th>
-                                        <th className="px-6 py-3">Status</th>
+                                        <th className="px-6 py-3 bg-gray-50 text-left">Recipient Email</th>
+                                        <th className="px-6 py-3 bg-gray-50 text-left">Badge Details</th>
+                                        <th className="px-6 py-3 bg-gray-50 text-left">Status</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-50">
-                                    {bulkData.map((row, idx) => (
-                                        <tr key={idx} className="text-sm">
+                                    {bulkData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((row, idx) => (
+                                        <tr key={idx} className="text-sm hover:bg-gray-50 transition-colors">
                                             <td className="px-6 py-4 font-medium text-navy-800">{row.email}</td>
                                             <td className="px-6 py-4 text-gray-600">
                                                 <div className="font-bold text-navy-900">{row.badge_name}</div>
@@ -387,7 +406,7 @@ export default function BulkIssuePage() {
                                             </td>
                                             <td className="px-6 py-4">
                                                 {row.status === 'pending' && <span className="bg-gray-100 text-gray-500 px-2 py-1 rounded text-xs">Waiting</span>}
-                                                {row.status === 'processing' && <span className="text-primary-600 animate-pulse flex items-center"><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Working...</span>}
+                                                {row.status === 'processing' && <span className="text-primary-600 animate-pulse flex items-center font-bold text-xs"><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Sending...</span>}
                                                 {row.status === 'success' && (
                                                     <div className="flex flex-col">
                                                         <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold flex items-center w-fit"><CheckCircle2 className="w-3 h-3 mr-1" /> Success</span>
@@ -406,6 +425,32 @@ export default function BulkIssuePage() {
                                 </tbody>
                             </table>
                         </div>
+
+                        {/* Pagination Controls for Bulk */}
+                        {bulkData.length > itemsPerPage && (
+                            <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex items-center justify-between">
+                                <span className="text-xs text-gray-500">
+                                    Row {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, bulkData.length)} of {bulkData.length}
+                                </span>
+                                <div className="flex items-center space-x-2">
+                                    <button
+                                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                        disabled={currentPage === 1}
+                                        className="p-3 sm:p-1.5 rounded-lg border border-gray-200 bg-white disabled:opacity-30 active:scale-95 select-none"
+                                    >
+                                        <ChevronLeft className="w-5 h-5 sm:w-4 sm:h-4" />
+                                    </button>
+                                    <span className="text-xs font-bold text-navy-900 mx-2">Page {currentPage} / {Math.ceil(bulkData.length / itemsPerPage)}</span>
+                                    <button
+                                        onClick={() => setCurrentPage(p => Math.min(Math.ceil(bulkData.length / itemsPerPage), p + 1))}
+                                        disabled={currentPage === Math.ceil(bulkData.length / itemsPerPage)}
+                                        className="p-3 sm:p-1.5 rounded-lg border border-gray-200 bg-white disabled:opacity-30 active:scale-95 select-none"
+                                    >
+                                        <ChevronRight className="w-5 h-5 sm:w-4 sm:h-4" />
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 ) : (
                     <div className="card bg-white border-2 border-dashed border-gray-200 p-12 text-center animate-in fade-in duration-500">

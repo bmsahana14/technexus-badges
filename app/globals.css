@@ -24,8 +24,9 @@
 
 @layer components {
   .btn-primary {
-    @apply bg-primary-500 text-white font-medium py-3 px-6 rounded-lg transition-all duration-200 shadow-md flex items-center justify-center;
+    @apply bg-primary-500 text-white font-medium py-3 px-6 rounded-lg transition-all duration-100 shadow-md flex items-center justify-center select-none active:scale-95 active:opacity-90 active:shadow-inner cursor-pointer;
     touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
   }
 
   @media (hover: hover) {
@@ -34,13 +35,10 @@
     }
   }
 
-  .btn-primary:active {
-    @apply transform scale-95 shadow-inner opacity-90;
-  }
-
   .btn-secondary {
-    @apply bg-white text-primary-600 font-medium py-3 px-6 rounded-lg transition-all duration-200 border-2 border-primary-500 shadow-md flex items-center justify-center;
+    @apply bg-white text-primary-600 font-medium py-3 px-6 rounded-lg transition-all duration-100 border-2 border-primary-500 shadow-md flex items-center justify-center select-none active:scale-95 active:opacity-90 active:shadow-inner cursor-pointer;
     touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
   }
 
   @media (hover: hover) {
@@ -49,8 +47,13 @@
     }
   }
 
-  .btn-secondary:active {
-    @apply transform scale-95 shadow-inner opacity-90;
+  /* Mobile Speed Utility */
+  .touch-none {
+    touch-action: none;
+  }
+
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
   }
 
   .input-field {

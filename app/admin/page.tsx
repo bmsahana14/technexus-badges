@@ -18,7 +18,12 @@ import {
     ExternalLink,
     RefreshCcw,
     Mail,
-    FileJson
+    FileJson,
+    ChevronLeft,
+    ChevronRight,
+    Trash,
+    Eye,
+    EyeOff
 } from 'lucide-react'
 import { toast, Toaster } from 'react-hot-toast'
 
@@ -34,13 +39,48 @@ export default function AdminDashboard() {
     const [badges, setBadges] = useState<any[]>([])
     const [searchTerm, setSearchTerm] = useState('')
 
+    // Pagination State
+    const [currentPage, setCurrentPage] = useState(1)
+    const itemsPerPage = 10
+
+    // Archiving (Hiding) State
+    const [showArchived, setShowArchived] = useState(false)
+    const [hiddenIds, setHiddenIds] = useState<string[]>([])
+
     useEffect(() => {
-        checkAuth()
+        const initialize = async () => {
+            await checkAuth()
+            // Load hidden badges from localStorage
+            const savedHidden = localStorage.getItem('technexus_hidden_badges')
+            if (savedHidden) {
+                try {
+                    setHiddenIds(JSON.parse(savedHidden))
+                } catch (e) {
+                    console.error('Error loading hidden badges:', e)
+                }
+            }
+        }
+        initialize()
     }, [])
+
+    const toggleHideBadge = (id: string, name: string) => {
+        const isCurrentlyHidden = hiddenIds.includes(id)
+        let newHidden: string[]
+
+        if (isCurrentlyHidden) {
+            newHidden = hiddenIds.filter(hideId => hideId !== id)
+            toast.success(`"${name}" is now visible in your main list.`)
+        } else {
+            newHidden = [...hiddenIds, id]
+            toast.success(`"${name}" archived (hidden from this view).`)
+        }
+
+        setHiddenIds(newHidden)
+        localStorage.setItem('technexus_hidden_badges', JSON.stringify(newHidden))
+    }
 
     const checkAuth = async () => {
         try {
-            // Get session & user in one go
             const { data: { session } } = await supabase.auth.getSession()
             const user = session?.user
 
@@ -49,14 +89,12 @@ export default function AdminDashboard() {
                 return
             }
 
-            // Quick check
             if (!isAdmin(user.email)) {
                 toast.error('Access denied. Administrator privileges required.')
                 router.push('/dashboard')
                 return
             }
 
-            // Parallelize secure check and data loading
             await Promise.all([
                 getCurrentUser().then(secureUser => {
                     if (!secureUser || !isAdmin(secureUser.email)) {
@@ -70,7 +108,6 @@ export default function AdminDashboard() {
             setLoading(false)
         } catch (error) {
             console.error('Admin Auth Check - EXCEPTION:', error)
-            // If it's not the 'Unauthorized' we threw, push to signin
             if (error instanceof Error && error.message !== 'Unauthorized') {
                 router.push('/auth/signin')
             }
@@ -80,7 +117,6 @@ export default function AdminDashboard() {
     const loadData = async () => {
         setRefreshing(true)
         try {
-            // Get user session for authentication
             const { data: { session } } = await supabase.auth.getSession()
 
             if (!session?.access_token) {
@@ -97,17 +133,12 @@ export default function AdminDashboard() {
 
             if (!res.ok) {
                 const errorData = await res.json()
-                console.error('Admin Data Fetch Error:', errorData)
-                if (errorData.debug) {
-                    console.error('Debug Info:', errorData.debug)
-                }
                 throw new Error(errorData.error || 'Failed to fetch admin data')
             }
 
             const { badges: allBadges } = await res.json()
             setBadges(allBadges || [])
 
-            // Calculate stats
             const uniqueUserCount = new Set(allBadges?.map((u: any) => u.user_id)).size
 
             setStats({
@@ -128,10 +159,10 @@ export default function AdminDashboard() {
     }
 
     const handleDeleteBadge = async (id: string, name: string) => {
-        if (!confirm(`Are you sure you want to revoke "${name}"? This cannot be undone.`)) return
+        const warning = `🚨 PERMANENT ACTION ALERT:\n\nRevoking this credential will:\n1. Remove it from the user's dashboard immediately.\n2. Permanently disable the public verification link.\n3. Delete the record from the database.\n\nOnly do this for errors or fraud. Do NOT revoke badges for completed events.\n\nAre you absolutely sure you want to revoke "${name}"?`
 
-        // Optimistic UI could go here, but since it's a critical action, 
-        // we'll just show a loading toast if it was very slow.
+        if (!confirm(warning)) return
+
         const loadingToast = toast.loading(`Revoking "${name}"...`)
 
         try {
@@ -153,21 +184,38 @@ export default function AdminDashboard() {
             }
 
             toast.success('Badge revoked successfully', { id: loadingToast })
-            loadData() // Reload list
+            loadData()
         } catch (error: any) {
             toast.error(error.message, { id: loadingToast })
         }
     }
 
-    const filteredBadges = badges.filter((badge: any) =>
-        badge.badge_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        badge.event_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (badge.credential_id && badge.credential_id.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        badge.profiles?.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        badge.profiles?.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        badge.profiles?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        badge.recipient_email?.toLowerCase().includes(searchTerm.toLowerCase())
+    const filteredBadges = badges.filter((badge: any) => {
+        const matchesSearch =
+            badge.badge_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            badge.event_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (badge.credential_id && badge.credential_id.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            badge.profiles?.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            badge.profiles?.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            badge.profiles?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            badge.recipient_email?.toLowerCase().includes(searchTerm.toLowerCase())
+
+        if (!matchesSearch) return false
+
+        const isArchived = hiddenIds.includes(badge.id)
+        if (showArchived) return true
+        return !isArchived
+    })
+
+    const totalPages = Math.ceil(filteredBadges.length / itemsPerPage)
+    const paginatedBadges = filteredBadges.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
     )
+
+    useEffect(() => {
+        setCurrentPage(1)
+    }, [searchTerm, showArchived])
 
     const handleSignOut = async () => {
         await signOut()
@@ -200,21 +248,21 @@ export default function AdminDashboard() {
                     <div className="flex items-center space-x-2 sm:space-x-4">
                         <button
                             onClick={loadData}
-                            className={`p-2 rounded-lg text-gray-400 hover:text-primary-600 hover:bg-primary-50 active:scale-95 active:bg-primary-100 transition-all ${refreshing ? 'animate-spin text-primary-600' : ''}`}
+                            className={`p-3 sm:p-2 rounded-lg text-gray-400 hover:text-primary-600 hover:bg-primary-50 active:scale-95 active:bg-primary-100 transition-all select-none ${refreshing ? 'animate-spin text-primary-600' : ''}`}
                             title="Refresh"
                         >
                             <RefreshCcw className="w-5 h-5" />
                         </button>
                         <Link
                             href="/dashboard"
-                            className="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 active:scale-95 active:bg-primary-100 transition-all"
+                            className="p-3 sm:p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 active:scale-95 active:bg-primary-100 transition-all select-none"
                             title="User View"
                         >
                             <LayoutDashboard className="w-5 h-5" />
                         </Link>
                         <button
                             onClick={handleSignOut}
-                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 active:scale-95 active:bg-red-100 rounded-lg transition-all"
+                            className="p-3 sm:p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 active:scale-95 active:bg-red-100 rounded-lg transition-all select-none"
                             title="Exit"
                         >
                             <LogOut className="w-5 h-5" />
@@ -280,13 +328,13 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* Badge Management Table */}
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-6">
                     <div className="p-6 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <h3 className="text-xl font-bold text-navy-900 flex items-center">
                             <BarChart3 className="w-5 h-5 mr-2 text-primary-500" />
                             Registry
                         </h3>
-                        <div className="flex items-center space-x-3">
+                        <div className="flex flex-wrap items-center gap-3">
                             <div className="flex items-center text-sm font-bold text-gray-400 uppercase tracking-widest">
                                 <Search className="w-4 h-4 mr-2" />
                                 Filter:
@@ -300,23 +348,31 @@ export default function AdminDashboard() {
                                     className="pl-4 pr-10 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-primary-100 outline-none w-full md:w-64 font-medium"
                                 />
                             </div>
+                            <div className="h-8 w-px bg-gray-100 hidden md:block"></div>
+                            <button
+                                onClick={() => setShowArchived(!showArchived)}
+                                className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-bold transition-all ${showArchived ? 'bg-primary-600 text-white' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}
+                            >
+                                {showArchived ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                                <span>{showArchived ? 'Showing All' : 'Hide Archived'}</span>
+                            </button>
                         </div>
                     </div>
 
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left">
-                            <thead className="bg-gray-50 text-gray-500 text-[10px] uppercase font-bold tracking-wider">
+                    <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
+                        <table className="w-full text-left border-collapse">
+                            <thead className="bg-gray-50 text-gray-500 text-[10px] uppercase font-bold tracking-wider sticky top-0 z-10 shadow-sm">
                                 <tr>
-                                    <th className="px-6 py-4">Badge & ID</th>
-                                    <th className="px-6 py-4">Recipient</th>
-                                    <th className="px-6 py-4">Event</th>
-                                    <th className="px-6 py-4">Date</th>
-                                    <th className="px-6 py-4 text-right">Actions</th>
+                                    <th className="px-6 py-4 bg-gray-50">Badge & ID</th>
+                                    <th className="px-6 py-4 bg-gray-50">Recipient</th>
+                                    <th className="px-6 py-4 bg-gray-50">Event</th>
+                                    <th className="px-6 py-4 bg-gray-50">Date</th>
+                                    <th className="px-6 py-4 bg-gray-50 text-right">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
-                                {filteredBadges.map((badge: any) => (
-                                    <tr key={badge.id} className="hover:bg-gray-50 transition-colors">
+                                {paginatedBadges.map((badge: any) => (
+                                    <tr key={badge.id} className={`hover:bg-gray-50 transition-colors ${hiddenIds.includes(badge.id) ? 'opacity-60 bg-gray-50/50' : ''}`}>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center">
                                                 <div className="w-10 h-10 rounded-lg bg-primary-100 flex items-center justify-center mr-3 overflow-hidden flex-shrink-0">
@@ -358,9 +414,16 @@ export default function AdminDashboard() {
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex items-center justify-end space-x-1">
                                                 <button
+                                                    onClick={() => toggleHideBadge(badge.id, badge.badge_name)}
+                                                    className={`p-3 sm:p-2 rounded-lg transition-all active:scale-90 select-none ${hiddenIds.includes(badge.id) ? 'text-primary-600 bg-primary-50' : 'text-gray-300 hover:text-primary-600 hover:bg-primary-50'}`}
+                                                    title={hiddenIds.includes(badge.id) ? "Unarchive" : "Archive (Hide from this view)"}
+                                                >
+                                                    {hiddenIds.includes(badge.id) ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                                                </button>
+                                                <button
                                                     onClick={() => handleDeleteBadge(badge.id, badge.badge_name)}
-                                                    className="p-2 text-gray-300 hover:text-red-600 hover:bg-red-50 active:scale-90 rounded-lg transition-all disabled:opacity-50"
-                                                    title="Revoke"
+                                                    className="p-3 sm:p-2 text-gray-300 hover:text-red-600 hover:bg-red-50 active:scale-90 rounded-lg transition-all disabled:opacity-50 select-none"
+                                                    title="Revoke Credential (Permanent removal)"
                                                     disabled={refreshing}
                                                 >
                                                     <Trash2 className="w-4 h-4" />
@@ -369,7 +432,7 @@ export default function AdminDashboard() {
                                                     href={badge.badge_image_url}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    className="p-2 text-gray-300 hover:text-primary-600 hover:bg-primary-50 active:scale-90 rounded-lg transition-all"
+                                                    className="p-3 sm:p-2 text-gray-300 hover:text-primary-600 hover:bg-primary-50 active:scale-90 rounded-lg transition-all select-none"
                                                     title="View"
                                                 >
                                                     <ExternalLink className="w-4 h-4" />
@@ -379,7 +442,7 @@ export default function AdminDashboard() {
                                     </tr>
                                 ))}
 
-                                {filteredBadges.length === 0 && (
+                                {paginatedBadges.length === 0 && (
                                     <tr>
                                         <td colSpan={5} className="px-6 py-12 text-center">
                                             <Search className="w-10 h-10 text-gray-200 mx-auto mb-3" />
@@ -390,6 +453,45 @@ export default function AdminDashboard() {
                             </tbody>
                         </table>
                     </div>
+
+                    {/* Pagination Controls */}
+                    {totalPages > 1 && (
+                        <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex items-center justify-between">
+                            <div className="text-sm text-gray-500">
+                                Showing <span className="font-bold text-navy-900">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-bold text-navy-900">{Math.min(currentPage * itemsPerPage, filteredBadges.length)}</span> of <span className="font-bold text-navy-900">{filteredBadges.length}</span> results
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                    disabled={currentPage === 1}
+                                    className="p-3 sm:p-2 rounded-lg border border-gray-200 bg-white text-gray-600 disabled:opacity-50 hover:bg-gray-50 transition-all select-none active:scale-90"
+                                >
+                                    <ChevronLeft className="w-4 h-4" />
+                                </button>
+                                <div className="flex items-center space-x-1">
+                                    {[...Array(totalPages)].map((_, i) => (
+                                        <button
+                                            key={i + 1}
+                                            onClick={() => setCurrentPage(i + 1)}
+                                            className={`w-10 h-10 sm:w-8 sm:h-8 rounded-lg text-sm font-bold transition-all select-none active:scale-90 ${currentPage === i + 1
+                                                ? 'bg-primary-600 text-white shadow-lg shadow-primary-100'
+                                                : 'text-gray-600 hover:bg-gray-100'
+                                                }`}
+                                        >
+                                            {i + 1}
+                                        </button>
+                                    )).slice(Math.max(0, currentPage - 3), Math.min(totalPages, currentPage + 2))}
+                                </div>
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                    disabled={currentPage === totalPages}
+                                    className="p-3 sm:p-2 rounded-lg border border-gray-200 bg-white text-gray-600 disabled:opacity-50 hover:bg-gray-50 transition-all select-none active:scale-90"
+                                >
+                                    <ChevronRight className="w-4 h-4" />
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Management Helpers */}

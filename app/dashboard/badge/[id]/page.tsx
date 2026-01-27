@@ -21,12 +21,13 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
     if (!badge) return { title: 'Badge Not Found | TechNexus' }
 
     return {
-        title: `TechNexus Credential: ${badge.badge_name}`,
-        description: `Certificate for ${badge.badge_name} - ${badge.badge_description}`,
+        title: `${badge.badge_name} | TechNexus Community Credential`,
+        description: `This credential was issued to a member of the TechNexus Community for achieving ${badge.badge_name}.`,
         openGraph: {
-            title: `${badge.badge_name} | TechNexus Community`,
-            description: badge.badge_description,
+            title: `${badge.badge_name} - TechNexus Community`,
+            description: badge.badge_description || `Official digital badge from TechNexus Community`,
             url: `${baseUrl}/dashboard/badge/${id}`,
+            siteName: 'TechNexus Community',
             images: [
                 {
                     url: badge.badge_image_url,

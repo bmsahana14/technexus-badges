@@ -28,8 +28,7 @@ export default function BadgeClient({ badge }: { badge: Badge }) {
 
     const shareToLinkedIn = () => {
         const badgeUrl = window.location.href
-        const text = `I'm proud to share that I've earned the "${badge.badge_name}" badge from the TechNexus Community! 🚀\n\nView my credential here: ${badgeUrl}`
-        const linkedinUrl = `https://www.linkedin.com/feed/?shareActive=true&text=${encodeURIComponent(text)}`
+        const linkedinUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(badgeUrl)}`
         window.open(linkedinUrl, '_blank', 'width=600,height=600')
     }
 
@@ -45,19 +44,35 @@ export default function BadgeClient({ badge }: { badge: Badge }) {
         <div className="min-h-screen bg-gray-50 pb-20 font-sans">
             <Toaster position="top-right" />
 
-            <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10 font-bold">
-                <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
-                    <Link href="/dashboard" className="flex items-center text-gray-600 hover:text-primary-600 transition-colors">
-                        <ArrowLeft className="w-5 h-5 mr-2" />
-                        <span>Back to Dashboard</span>
-                    </Link>
-                    <Link href="/" className="flex items-center hover:opacity-80 transition-opacity">
-                        <img src="/logo.png" alt="TechNexus Logo" className="h-12 sm:h-16 w-auto object-contain" />
-                    </Link>
+            <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50 font-bold">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                        <Link href="/" className="hover:opacity-80 transition-all flex-shrink-0">
+                            <img src="/logo.png" alt="TechNexus Logo" className="h-10 sm:h-14 w-auto object-contain" />
+                        </Link>
+                        <div className="h-8 w-px bg-gray-200 hidden sm:block"></div>
+                        <Link href="/dashboard" className="hidden sm:flex items-center text-gray-500 hover:text-primary-600 transition-colors text-sm">
+                            <ArrowLeft className="w-4 h-4 mr-1" />
+                            <span>Return to Dashboard</span>
+                        </Link>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                        <Link href="/auth/signup" className="hidden xs:block text-xs sm:text-sm font-semibold text-gray-600 hover:text-primary-600">
+                            Join Community
+                        </Link>
+                        <Link href="/dashboard" className="btn-primary py-2 px-4 shadow-md text-xs sm:text-sm">
+                            My Dashboard
+                        </Link>
+                    </div>
                 </div>
             </header>
 
             <main className="max-w-5xl mx-auto px-4 pt-10">
+                <div className="text-center mb-8">
+                    <p className="text-primary-600 font-black uppercase tracking-[0.2em] text-sm mb-2">Member's Achievement</p>
+                    <div className="h-1 w-20 bg-primary-600 mx-auto rounded-full"></div>
+                </div>
+
                 <div className="grid lg:grid-cols-2 gap-12 items-start">
                     {/* Badge Image Side */}
                     <div className="space-y-6">
