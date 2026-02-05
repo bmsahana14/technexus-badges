@@ -67,13 +67,12 @@ export default function Dashboard() {
 
     const shareToLinkedIn = (badge: Badge) => {
         console.log('LinkedIn share triggered for badge:', badge.badge_name)
-        // Use the deployed app URL for sharing, fallback to window.location.origin
         const appUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin
         const badgeUrl = `${appUrl}/dashboard/badge/${badge.id}`
-        const text = `I'm proud to share that I've earned the "${badge.badge_name}" digital badge from the TechNexus Community! 🚀\n\nView my verified credential here: ${badgeUrl}`
 
-        // Use the sharing endpoint which is more reliable for previews
-        const shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(badgeUrl)}`
+        const shareText = `I'm proud to share that I've earned the "${badge.badge_name}" digital badge from TechNexus Community! 🏆\n\nVerification ID: ${badge.credential_id || 'TN-VERIFIED'}\n\nCheck out my achievement here:\n${badgeUrl}\n\n#TechNexus #ProfessionalGrowth #DigitalBadges #Achievement`
+
+        const shareUrl = `https://www.linkedin.com/feed/?shareActive=true&text=${encodeURIComponent(shareText)}`
 
         const popup = window.open(shareUrl, '_blank', 'width=600,height=600')
         if (!popup) {
@@ -93,12 +92,16 @@ export default function Dashboard() {
     const [isSavingProfile, setIsSavingProfile] = useState(false)
 
     useEffect(() => {
+        let isMounted = true
         const initialize = async () => {
             // Give a small delay for Supabase to recover session from storage on mobile
             await new Promise(r => setTimeout(r, 500))
-            await checkUser()
+            if (isMounted) {
+                await checkUser()
+            }
         }
         initialize()
+        return () => { isMounted = false }
     }, [])
 
     const checkUser = async () => {

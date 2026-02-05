@@ -6,10 +6,7 @@ import { headers } from 'next/headers'
 // Generate dynamic metadata for LinkedIn previews
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
     const { id } = await params
-    const headersList = await headers()
-    const host = headersList.get('host') || 'technexus-badges.vercel.app'
-    const protocol = host.includes('localhost') ? 'http' : 'https'
-    const baseUrl = `${protocol}://${host}`
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://technexus-badges.vercel.app'
 
     // Use admin client to bypass RLS for scraping
     const { data: badge } = await supabase
@@ -26,10 +23,10 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
 
     return {
         title: `${badge.badge_name} | TechNexus Community Credential`,
-        description: `This credential was issued to ${userName} by TechNexus Community for achieving ${badge.badge_name}.`,
+        description: `Official digital badge issued to ${userName} by TechNexus Community for earning the "${badge.badge_name}" credential. Verification ID: ${badge.credential_id || 'N/A'}.`,
         openGraph: {
-            title: `${badge.badge_name} - ${userName}`,
-            description: badge.badge_description || `Official digital badge from TechNexus Community`,
+            title: `Credential Earned: ${badge.badge_name}`,
+            description: `I am proud to share this official digital achievement from TechNexus Community. This credential verifies my expertise and commitment to excellence in ${badge.badge_name}.`,
             url: `${baseUrl}/dashboard/badge/${id}`,
             siteName: 'TechNexus Community',
             images: [
@@ -44,8 +41,8 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
         },
         twitter: {
             card: 'summary_large_image',
-            title: badge.badge_name,
-            description: badge.badge_description,
+            title: `I earned a new badge: ${badge.badge_name}`,
+            description: `Official digital credential issued by TechNexus Community.`,
             images: [badge.badge_image_url],
         },
     }

@@ -23,20 +23,27 @@ export default function IssueBadgePage() {
     })
 
     useEffect(() => {
-        checkAuth()
+        let isMounted = true
+        const verify = async () => {
+            await checkAuth(isMounted)
+        }
+        verify()
+        return () => { isMounted = false }
     }, [])
 
-    const checkAuth = async () => {
+    const checkAuth = async (isMounted: boolean) => {
         try {
             const user = await getCurrentUser()
+            if (!isMounted) return
+
             if (!user || !isAdmin(user.email)) {
                 router.push('/auth/signin')
                 toast.error('Access denied. Administrator privileges required.')
                 return
             }
-            setPageLoading(false) // Only stop loading if we are verified
+            setPageLoading(false)
         } catch (error) {
-            router.push('/auth/signin')
+            if (isMounted) router.push('/auth/signin')
         }
     }
 

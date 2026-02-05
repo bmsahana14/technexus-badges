@@ -48,14 +48,17 @@ export default function AdminDashboard() {
     const [hiddenIds, setHiddenIds] = useState<string[]>([])
 
     useEffect(() => {
+        let isMounted = true
         const initialize = async () => {
             // Give a small delay for Supabase to recover session from storage on mobile
             await new Promise(r => setTimeout(r, 500))
-            await checkAuth()
+            if (isMounted) {
+                await checkAuth()
+            }
 
             // Load hidden badges from localStorage
             const savedHidden = localStorage.getItem('technexus_hidden_badges')
-            if (savedHidden) {
+            if (savedHidden && isMounted) {
                 try {
                     setHiddenIds(JSON.parse(savedHidden))
                 } catch (e) {
@@ -64,6 +67,7 @@ export default function AdminDashboard() {
             }
         }
         initialize()
+        return () => { isMounted = false }
     }, [])
 
     const toggleHideBadge = (id: string, name: string) => {

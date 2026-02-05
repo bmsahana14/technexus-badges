@@ -19,7 +19,7 @@ export default function BadgeClient({ badge }: { badge: any }) {
             const url = window.URL.createObjectURL(blob)
             const link = document.createElement('a')
             link.href = url
-            link.download = `${badge.badge_name.replace(/\s+/g, '_')}_Certificate.png`
+            link.download = `${badge.badge_name.replace(/\s+/g, '_')}_Badge.png`
             document.body.appendChild(link)
             link.click()
             document.body.removeChild(link)
@@ -32,7 +32,9 @@ export default function BadgeClient({ badge }: { badge: any }) {
 
     const shareToLinkedIn = () => {
         const badgeUrl = window.location.href
-        const linkedinUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(badgeUrl)}`
+        const shareText = `I'm proud to share that I've earned the "${badge.badge_name}" digital badge from TechNexus Community! 🏆\n\nVerification ID: ${badge.credential_id || 'TN-VERIFIED'}\n\nCheck out my achievement here:\n${badgeUrl}\n\n#TechNexus #ProfessionalGrowth #DigitalBadges #Achievement`
+
+        const linkedinUrl = `https://www.linkedin.com/feed/?shareActive=true&text=${encodeURIComponent(shareText)}`
         window.open(linkedinUrl, '_blank', 'width=600,height=600')
     }
 
@@ -106,7 +108,7 @@ export default function BadgeClient({ badge }: { badge: any }) {
                                     className="btn-primary space-x-2 py-3 px-8 shadow-lg shadow-primary-200 flex-1 flex items-center justify-center font-bold"
                                 >
                                     <Download className="w-5 h-5" />
-                                    <span>Download Certificate</span>
+                                    <span>Download Badge</span>
                                 </button>
                             </div>
                         </div>

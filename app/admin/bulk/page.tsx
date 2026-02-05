@@ -34,19 +34,26 @@ export default function BulkIssuePage() {
     const [bulkImageUrl, setBulkImageUrl] = useState('')
 
     useEffect(() => {
-        checkAuth()
+        let isMounted = true
+        const verify = async () => {
+            await checkAuth(isMounted)
+        }
+        verify()
+        return () => { isMounted = false }
     }, [])
 
-    const checkAuth = async () => {
+    const checkAuth = async (isMounted: boolean) => {
         try {
             const user = await getCurrentUser()
+            if (!isMounted) return
+
             if (!user || !isAdmin(user.email)) {
                 router.push('/auth/signin')
                 return
             }
             setPageLoading(false)
         } catch (error) {
-            router.push('/auth/signin')
+            if (isMounted) router.push('/auth/signin')
         }
     }
 

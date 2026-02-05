@@ -13,12 +13,16 @@ export default function Home() {
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
+        let isMounted = true
         const initialize = async () => {
             // Give a small delay for Supabase to recover session from storage on mobile
             await new Promise(r => setTimeout(r, 500))
-            await checkUser()
+            if (isMounted) {
+                await checkUser()
+            }
         }
         initialize()
+        return () => { isMounted = false }
     }, [])
 
     const checkUser = async () => {
