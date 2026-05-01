@@ -32,15 +32,33 @@ export async function signOut() {
 }
 
 export async function getCurrentUser() {
-    const { data: { user }, error } = await supabase.auth.getUser()
-    if (error) throw error
-    return user
+    try {
+        const { data: { user }, error } = await supabase.auth.getUser()
+        if (error) {
+            if (error.message.includes('refresh_token_not_found') || error.status === 400) {
+                return null
+            }
+            throw error
+        }
+        return user
+    } catch (err) {
+        return null
+    }
 }
 
 export async function getSession() {
-    const { data: { session }, error } = await supabase.auth.getSession()
-    if (error) throw error
-    return session
+    try {
+        const { data: { session }, error } = await supabase.auth.getSession()
+        if (error) {
+            if (error.message.includes('refresh_token_not_found') || error.status === 400) {
+                return null
+            }
+            throw error
+        }
+        return session
+    } catch (err) {
+        return null
+    }
 }
 
 export async function resetPassword(email: string) {

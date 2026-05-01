@@ -6,7 +6,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { getCurrentUser, signOut, isAdmin } from '@/lib/auth'
 import { supabase, type Badge } from '@/lib/supabase'
-import { Award, LogOut, Calendar, FileText, Loader2, ShieldCheck, User, Settings, X, Save, Linkedin, Share2, Download } from 'lucide-react'
+import { Award, LogOut, Calendar, FileText, Loader2, ShieldCheck, User, Settings, X, Save, Linkedin, Share2, Download, Camera } from 'lucide-react'
 import { toast, Toaster } from 'react-hot-toast'
 
 export default function Dashboard() {
@@ -87,9 +87,11 @@ export default function Dashboard() {
     const [profileForm, setProfileForm] = useState({
         first_name: '',
         last_name: '',
-        designation: ''
+        designation: '',
+        avatar_url: ''
     })
     const [isSavingProfile, setIsSavingProfile] = useState(false)
+    const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
 
     useEffect(() => {
         let isMounted = true
@@ -143,7 +145,8 @@ export default function Dashboard() {
             setProfileForm({
                 first_name: profile?.first_name || '',
                 last_name: profile?.last_name || '',
-                designation: profile?.designation || ''
+                designation: profile?.designation || '',
+                avatar_url: profile?.avatar_url || ''
             })
             await fetchBadges(currentUser.id)
         } catch (err) {
@@ -164,6 +167,7 @@ export default function Dashboard() {
                     first_name: profileForm.first_name,
                     last_name: profileForm.last_name,
                     designation: profileForm.designation,
+                    avatar_url: profileForm.avatar_url,
                     updated_at: new Date().toISOString()
                 })
                 .eq('id', user.id)
@@ -181,6 +185,33 @@ export default function Dashboard() {
             toast.error(err.message || 'Failed to update profile')
         } finally {
             setIsSavingProfile(false)
+        }
+    }
+
+    const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+
+        setIsUploadingAvatar(true)
+        try {
+            const formData = new FormData()
+            formData.append('file', file)
+            formData.append('fileName', `avatars/${user.id}-${Date.now()}.${file.name.split('.').pop()}`)
+
+            const response = await fetch('/api/upload', {
+                method: 'POST',
+                body: formData
+            })
+
+            const data = await response.json()
+            if (!response.ok) throw new Error(data.error)
+
+            setProfileForm(prev => ({ ...prev, avatar_url: data.publicUrl }))
+            toast.success('Photo uploaded successfully')
+        } catch (error: any) {
+            toast.error(error.message || 'Failed to upload photo')
+        } finally {
+            setIsUploadingAvatar(false)
         }
     }
 
@@ -245,10 +276,14 @@ export default function Dashboard() {
                                 <>
                                     <button
                                         onClick={() => setIsProfileModalOpen(true)}
-                                        className="p-3 sm:p-2 text-gray-600 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors border border-transparent select-none active:scale-95"
+                                        className="p-1 text-gray-600 hover:text-primary-600 hover:bg-primary-50 rounded-full transition-colors border border-transparent select-none active:scale-95 flex items-center justify-center"
                                         title="Profile"
                                     >
-                                        <User className="w-5 h-5" />
+                                        {user?.avatar_url ? (
+                                            <img src={user.avatar_url} alt="Profile" className="w-8 h-8 sm:w-9 sm:h-9 rounded-full object-cover border border-gray-200" />
+                                        ) : (
+                                            <User className="w-6 h-6 sm:w-7 sm:h-7 m-1" />
+                                        )}
                                     </button>
 
                                     {isAdmin(user.email) && (
@@ -295,6 +330,28 @@ export default function Dashboard() {
                         </div>
 
                         <form onSubmit={handleUpdateProfile} className="p-6 space-y-4">
+                            <div className="flex flex-col items-center justify-center mb-6">
+                                <div className="relative group">
+                                    <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden border-4 border-white shadow-lg">
+                                        {profileForm.avatar_url ? (
+                                            <img src={profileForm.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                                        ) : (
+                                            <User className="w-12 h-12 text-gray-400" />
+                                        )}
+                                        {isUploadingAvatar && (
+                                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                                                <Loader2 className="w-6 h-6 text-white animate-spin" />
+                                            </div>
+                                        )}
+                                    </div>
+                                    <label className="absolute bottom-0 right-0 bg-primary-600 text-white p-2 rounded-full cursor-pointer shadow-lg hover:bg-primary-700 transition-colors">
+                                        <input type="file" className="hidden" accept="image/*" onChange={handleAvatarUpload} disabled={isUploadingAvatar} />
+                                        <Camera className="w-4 h-4" />
+                                    </label>
+                                </div>
+                                <p className="text-xs text-gray-500 mt-2">Click icon to change photo</p>
+                            </div>
+
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-semibold text-gray-700 mb-1">First Name</label>

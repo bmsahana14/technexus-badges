@@ -57,6 +57,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     last_name VARCHAR(255),
     designation VARCHAR(255),
     email VARCHAR(255),
+    avatar_url TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

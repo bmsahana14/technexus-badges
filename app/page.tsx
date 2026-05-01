@@ -27,10 +27,22 @@ export default function Home() {
 
     const checkUser = async () => {
         try {
-            const { data: { session } } = await supabase.auth.getSession()
+            const { data: { session }, error } = await supabase.auth.getSession()
+
+            if (error) {
+                // If the refresh token is missing or invalid, clear the session
+                if (error.message.includes('refresh_token_not_found') || error.status === 400) {
+                    await supabase.auth.signOut()
+                    setUser(null)
+                    return
+                }
+                throw error
+            }
+
             setUser(session?.user || null)
         } catch (err) {
-            // Not logged in
+            console.error('Auth check failed:', err)
+            setUser(null)
         } finally {
             setLoading(false)
         }
